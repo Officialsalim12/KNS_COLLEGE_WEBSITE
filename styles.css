@@ -27,6 +27,28 @@
     --font-primary: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --font-heading: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     
+    /* Typography Sizes - Uniform across all pages */
+    --font-size-base: 1rem;              /* 16px - Base body text */
+    --font-size-small: 0.875rem;         /* 14px - Small text, captions */
+    --font-size-xs: 0.75rem;             /* 12px - Extra small */
+    --font-size-lg: 1.125rem;            /* 18px - Large body text */
+    --font-size-xl: 1.25rem;             /* 20px - Extra large body text */
+    
+    /* Heading Sizes */
+    --font-size-h1: 2.5rem;              /* 40px - Page titles */
+    --font-size-h2: 1.8rem;              /* 28.8px - Content headings */
+    --font-size-h3: 1.5rem;              /* 24px - Sub-headings */
+    --font-size-h4: 1.25rem;             /* 20px - Section sub-headings */
+    --font-size-h5: 1.125rem;            /* 18px - Small headings */
+    --font-size-h6: 1rem;                /* 16px - Smallest headings */
+    
+    /* Special Sizes */
+    --font-size-page-title: 2.5rem;       /* 40px - Page titles */
+    --font-size-page-subtitle: 1.2rem;    /* 19.2px - Page subtitles */
+    --font-size-section-heading: 2.2rem;  /* 35.2px - Section headings */
+    --font-size-content-heading: 1.8rem;  /* 28.8px - Content headings */
+    --font-size-body: 1rem;               /* 16px - Body text */
+    
     /* Spacing */
     --spacing-xs: 0.5rem;
     --spacing-sm: 1rem;
@@ -69,7 +91,7 @@ html {
     /* Ensure chatbot buttons are always visible */
     .chatbot-container {
         position: fixed !important;
-        bottom: 15px !important;
+        bottom: 75px !important;
         right: 15px !important;
         z-index: 99999 !important;
         display: flex !important;
@@ -96,7 +118,7 @@ html {
     /* Ensure chatbot buttons are always visible on mobile */
     .chatbot-container {
         position: fixed !important;
-        bottom: 10px !important;
+        bottom: 70px !important;
         right: 10px !important;
         z-index: 99999 !important;
         display: flex !important;
@@ -123,7 +145,7 @@ html {
     /* Ensure chatbot buttons are visible on small mobile */
     .chatbot-container {
         position: fixed !important;
-        bottom: 8px !important;
+        bottom: 68px !important;
         right: 8px !important;
         z-index: 99999 !important;
         display: flex !important;
@@ -156,6 +178,7 @@ body {
     color: var(--text-color);
     background-color: var(--background-color);
     line-height: 1.6;
+    font-size: var(--font-size-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -476,14 +499,14 @@ body {
 }
 
 .hero-title {
-    font-size: 2.5rem;
+    font-size: var(--font-size-h1);
     font-weight: 700;
     margin-bottom: var(--spacing-sm);
     line-height: 1.2;
 }
 
 .hero-subtitle {
-    font-size: 1.2rem;
+    font-size: var(--font-size-page-subtitle);
     line-height: 1.6;
     opacity: 0.95;
 }
@@ -1821,7 +1844,7 @@ body {
 }
 
 .hero-main-title {
-    font-size: 4.5rem;
+    font-size: 3.5rem;
     font-weight: 800;
     margin-bottom: 0;
     line-height: 1.2;
@@ -1832,7 +1855,7 @@ body {
 }
 
 .hero-main-subtitle {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
     margin-bottom: 0;
     opacity: 1;
     font-weight: 800;
@@ -1840,6 +1863,7 @@ body {
     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.5);
     padding: var(--spacing-sm) 0;
     letter-spacing: -0.5px;
+    line-height: 1.4;
 }
 
 .hero-buttons {
@@ -1922,6 +1946,202 @@ body {
     text-align: center;
 }
 
+/* Fixed Side Buttons - Apply and Requirements */
+.side-buttons-container {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 998;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: none;
+}
+
+.side-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px 20px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 50px;
+    color: #ffffff !important;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    border: 2px solid transparent;
+    min-width: 160px;
+    pointer-events: auto;
+    cursor: pointer;
+    background: linear-gradient(135deg, #1a4d7a 0%, #0f3a5a 100%);
+    animation: sideButtonColorCycle 6s ease-in-out infinite;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.side-btn-requirements {
+    animation-delay: 3s;
+}
+
+.side-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit;
+    z-index: -1;
+    opacity: 1;
+}
+
+.side-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+    z-index: -1;
+}
+
+.side-btn:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+.side-btn:hover {
+    transform: translateX(-8px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.side-btn:active {
+    transform: translateX(-5px) scale(1.02);
+}
+
+.side-btn-text {
+    position: relative;
+    z-index: 2;
+    letter-spacing: 0.5px;
+    color: #ffffff !important;
+    display: inline-block;
+}
+
+.side-btn-icon {
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    flex-shrink: 0;
+}
+
+.side-btn:hover .side-btn-icon {
+    transform: translateX(3px);
+}
+
+/* Color Cycle Animation for Side Buttons */
+@keyframes sideButtonColorCycle {
+    0%, 100% {
+        background: linear-gradient(135deg, #1a4d7a 0%, #0f3a5a 100%);
+        border-color: #1a4d7a;
+        box-shadow: 0 6px 20px rgba(26, 77, 122, 0.4);
+    }
+    33.33% {
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+        border-color: #d4af37;
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    }
+    66.66% {
+        background: linear-gradient(135deg, #2d6ba3 0%, #1a4d7a 100%);
+        border-color: #2d6ba3;
+        box-shadow: 0 6px 20px rgba(45, 107, 163, 0.4);
+    }
+}
+
+/* Responsive styles for Side Buttons - Keep same appearance on all devices */
+@media (max-width: 1024px) {
+    .side-buttons-container {
+        right: 15px;
+        gap: 12px;
+    }
+    
+    .side-btn {
+        min-width: 140px;
+        padding: 12px 18px;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .side-buttons-container {
+        right: 10px;
+        gap: 10px;
+    }
+    
+    .side-btn {
+        min-width: 130px;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .side-btn-text {
+        display: inline-block;
+    }
+    
+    .side-btn-icon {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .side-buttons-container {
+        right: 8px;
+        gap: 8px;
+    }
+    
+    .side-btn {
+        min-width: 120px;
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+    
+    .side-btn-icon {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 360px) {
+    .side-buttons-container {
+        right: 6px;
+        gap: 6px;
+    }
+    
+    .side-btn {
+        min-width: 110px;
+        padding: 10px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .side-btn-icon {
+        width: 14px;
+        height: 14px;
+    }
+}
+
 .main-content-full {
     padding: 0;
     min-height: auto;
@@ -1935,7 +2155,7 @@ body {
 }
 
 .section-heading {
-    font-size: 2.2rem;
+    font-size: var(--font-size-section-heading);
     text-align: center;
     margin-bottom: var(--spacing-lg);
     color: var(--primary-color);
@@ -1947,6 +2167,7 @@ body {
     position: relative;
     display: inline-block;
     padding: 0 var(--spacing-md);
+    line-height: 1.3;
 }
 
 .section-heading::before {
@@ -2012,17 +2233,19 @@ body {
 }
 
 .feature-title {
-    font-size: 1.5rem;
+    font-size: var(--font-size-h3);
     margin-bottom: var(--spacing-sm);
     color: #ffffff;
     font-weight: 700;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    line-height: 1.3;
 }
 
 .feature-description {
     color: #ffffff;
     line-height: 1.6;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    font-size: var(--font-size-body);
 }
 
 /* Programmes Preview Section */
@@ -2330,7 +2553,7 @@ body {
 }
 
 .cta-title {
-    font-size: 2.2rem;
+    font-size: var(--font-size-section-heading);
     margin-bottom: var(--spacing-md);
     color: var(--primary-color);
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
@@ -2338,12 +2561,14 @@ body {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: 700;
+    line-height: 1.3;
 }
 
 .cta-text {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     color: var(--text-light);
     margin-bottom: var(--spacing-lg);
+    line-height: 1.8;
 }
 
 .cta-buttons {
@@ -2364,14 +2589,16 @@ body {
 }
 
 .page-title {
-    font-size: 2.5rem;
+    font-size: var(--font-size-page-title);
     font-weight: 700;
     margin-bottom: var(--spacing-sm);
+    line-height: 1.2;
 }
 
 .page-subtitle {
-    font-size: 1.2rem;
+    font-size: var(--font-size-page-subtitle);
     opacity: 0.9;
+    line-height: 1.5;
 }
 
 /* ============================================
@@ -2393,10 +2620,12 @@ body {
 }
 
 .content-heading {
-    font-size: 1.8rem;
+    font-size: var(--font-size-content-heading);
     color: var(--primary-color);
     margin-bottom: var(--spacing-md);
     margin-top: var(--spacing-lg);
+    font-weight: 700;
+    line-height: 1.3;
 }
 
 .content-heading:first-child {
@@ -2404,7 +2633,7 @@ body {
 }
 
 .content-text {
-    font-size: 1rem;
+    font-size: var(--font-size-body);
     line-height: 1.8;
     color: var(--text-color);
     margin-bottom: var(--spacing-md);
@@ -2440,15 +2669,17 @@ body {
 }
 
 .vm-title {
-    font-size: 1.3rem;
+    font-size: var(--font-size-h4);
     color: var(--primary-color);
     margin-bottom: var(--spacing-sm);
     font-weight: 700;
+    line-height: 1.4;
 }
 
 .vm-text {
     color: var(--text-light);
     line-height: 1.7;
+    font-size: var(--font-size-body);
 }
 
 /* Why Study Grid */
@@ -2474,16 +2705,17 @@ body {
 }
 
 .why-study-title {
-    font-size: 1.1rem;
+    font-size: var(--font-size-h5);
     color: var(--primary-color);
     margin-bottom: var(--spacing-xs);
     font-weight: 600;
+    line-height: 1.4;
 }
 
 .why-study-text {
     color: var(--text-light);
     line-height: 1.6;
-    font-size: 0.95rem;
+    font-size: var(--font-size-body);
 }
 
 .testimonial-quote {
@@ -2494,7 +2726,7 @@ body {
     border-radius: 8px;
     color: #ffffff;
     font-style: italic;
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     line-height: 1.8;
 }
 
@@ -2520,17 +2752,18 @@ body {
 }
 
 .different-title {
-    font-size: 1.1rem;
+    font-size: var(--font-size-h5);
     color: var(--primary-color);
     margin-bottom: var(--spacing-xs);
     font-weight: 600;
     text-align: center;
+    line-height: 1.4;
 }
 
 .different-text {
     color: var(--text-light);
     line-height: 1.6;
-    font-size: 0.95rem;
+    font-size: var(--font-size-body);
     text-align: center;
 }
 
@@ -2731,15 +2964,18 @@ body {
 }
 
 .sidebar-box-title {
-    font-size: 1.2rem;
+    font-size: var(--font-size-h5);
     color: var(--primary-color);
     margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .sidebar-text {
     color: var(--text-light);
     line-height: 1.6;
     margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-body);
 }
 
 /* Course Overview Navigation */
@@ -3075,7 +3311,7 @@ body {
 }
 
 .category-title {
-    font-size: 2.2rem;
+    font-size: var(--font-size-section-heading);
     color: var(--primary-color);
     margin-bottom: var(--spacing-sm);
     font-weight: 700;
@@ -3083,10 +3319,11 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    line-height: 1.3;
 }
 
 .category-description {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
     color: var(--text-light);
     line-height: 1.8;
 }
@@ -3102,16 +3339,17 @@ body {
 }
 
 .subcategory-title {
-    font-size: 1.6rem;
+    font-size: var(--font-size-h3);
     color: var(--primary-color);
     margin-bottom: var(--spacing-sm);
     font-weight: 600;
     padding-left: var(--spacing-md);
     border-left: 4px solid var(--primary-color);
+    line-height: 1.3;
 }
 
 .subcategory-description {
-    font-size: 1rem;
+    font-size: var(--font-size-body);
     color: var(--text-light);
     line-height: 1.7;
     margin-bottom: var(--spacing-lg);
@@ -3187,7 +3425,7 @@ body {
 }
 
 .course-name {
-    font-size: 1.4rem;
+    font-size: var(--font-size-h4);
     color: var(--primary-color);
     margin-bottom: var(--spacing-sm);
     font-weight: 600;
@@ -3198,7 +3436,7 @@ body {
     color: var(--text-light);
     margin-bottom: var(--spacing-md);
     line-height: 1.7;
-    font-size: 0.95rem;
+    font-size: var(--font-size-body);
     flex: 1;
 }
 
@@ -3397,9 +3635,11 @@ body {
 }
 
 .requirement-title {
-    font-size: 1.3rem;
+    font-size: var(--font-size-h4);
     color: var(--primary-color);
     margin-bottom: var(--spacing-sm);
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .process-steps {
@@ -3435,14 +3675,17 @@ body {
 }
 
 .step-title {
-    font-size: 1.2rem;
+    font-size: var(--font-size-h5);
     color: var(--primary-color);
     margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .step-description {
     color: var(--text-light);
     line-height: 1.6;
+    font-size: var(--font-size-body);
 }
 
 .dates-table-wrapper {
@@ -5613,7 +5856,7 @@ body {
    ============================================ */
 .chatbot-container {
     position: fixed !important;
-    bottom: 20px;
+    bottom: 30px;
     right: 20px;
     z-index: 99999 !important;
     display: flex !important;
@@ -5984,7 +6227,7 @@ body {
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .chatbot-container {
-        bottom: 15px !important;
+        bottom: 75px !important;
         right: 15px !important;
         gap: 12px;
         z-index: 99999 !important;
@@ -6045,7 +6288,7 @@ body {
 
 @media (max-width: 480px) {
     .chatbot-container {
-        bottom: 10px !important;
+        bottom: 70px !important;
         right: 10px !important;
         display: flex !important;
         visibility: visible !important;

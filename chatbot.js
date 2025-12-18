@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: 'Diploma in Telecommunications', keywords: ['telecommunications', 'telecom', 'telecommunication'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' },
             { name: 'Diploma in Computing & Networking', keywords: ['computing', 'networking', 'ccst', 'cisco networking'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' },
             { name: 'Diploma in IT with Business Management', keywords: ['it business', 'it management', 'business management', 'it and business'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' },
-            { name: 'Diploma in Software Development', keywords: ['software development', 'software engineering', 'programming', 'coding'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' },
             { name: 'Diploma in Project Management', keywords: ['project management', 'pmi', 'project manager'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' },
             { name: 'Diploma in Enterprise and Small Business', keywords: ['enterprise', 'small business', 'entrepreneurship', 'esb', 'business'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' },
             { name: 'Diploma in Applied Computerised Accounting & Intuit QuickBooks Technology', keywords: ['accounting', 'quickbooks', 'intuit', 'bookkeeping', 'accountant'], type: 'diploma', duration: '2 Years', mode: 'Online / Hybrid' }
@@ -106,12 +105,12 @@ document.addEventListener('DOMContentLoaded', function() {
         {
             keywords: ['programme', 'programmes', 'programme', 'programmes', 'course', 'courses', 'what programmes', 'what courses', 'offer', 'available', 'study', 'studies'],
             question: 'What programmes do you offer?',
-            answer: 'We offer a comprehensive range of programmes including Diploma programmes (2 years), Certificate programmes (4 16 weeks), and Train & Certify Courses. Our programmes cover: Technology (Cybersecurity, Software Development, Networking, Telecommunications), Business (Project Management, Enterprise & Small Business, Accounting), and more. Visit our programmes page to see all available options.'
+            answer: 'We offer a comprehensive range of programmes including Diploma programmes (2 years), Certificate programmes (4 16 weeks), and Train & Certify Courses. Our programmes cover: Technology (Cybersecurity, Networking, Telecommunications), Business (Project Management, Enterprise & Small Business, Accounting), and more. Visit our programmes page to see all available options.'
         },
         {
             keywords: ['diploma', 'diplomas', 'diploma programme', 'diploma course', 'degree', 'degrees'],
             question: 'What diploma programmes are available?',
-            answer: 'We offer Diploma programmes in: Cybersecurity, Telecommunications, Computing & Networking, IT with Business Management, Software Development, Project Management, Enterprise & Small Business, and Applied Computerised Accounting. All diploma programmes are 2 years in duration and include globally recognized certification exam vouchers. Visit our programmes page for details.'
+            answer: 'We offer Diploma programmes in: Cybersecurity, Telecommunications, Computing & Networking, IT with Business Management, Project Management, Enterprise & Small Business, and Applied Computerised Accounting. All diploma programmes are 2 years in duration and include globally recognized certification exam vouchers. Visit our programmes page for details.'
         },
         {
             keywords: ['certificate', 'certificates', 'certificate programme', 'certificate course', 'short course', 'short courses'],
@@ -126,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
         {
             keywords: ['software development', 'software engineering', 'programming', 'coding', 'developer', 'web development', 'app development'],
             question: 'Do you offer software development programmes?',
-            answer: 'Yes! We offer Diploma in Software Development (2 years) and Certificate Programmes in Front End Web Development, Back End Web Development, and Full Stack Development. Learn modern programming languages, frameworks, and development practices to become a skilled software developer.'
+            answer: 'Yes! We offer Certificate Programmes in Front End Web Development, Back End Web Development, and Full Stack Development. Learn modern programming languages, frameworks, and development practices to become a skilled software developer.'
         },
         {
             keywords: ['networking', 'network', 'cisco', 'ccna', 'ccst', 'network administration'],
@@ -680,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     addMessage('bot', `I couldn't find a course matching "${courseQuery}" in our current offerings.`);
                     setTimeout(() => {
-                        addMessage('bot', 'We offer Diploma programmes in: Cybersecurity, Telecommunications, Computing & Networking, IT with Business Management, Software Development, Project Management, Enterprise & Small Business, and Applied Computerised Accounting.');
+                        addMessage('bot', 'We offer Diploma programmes in: Cybersecurity, Telecommunications, Computing & Networking, IT with Business Management, Project Management, Enterprise & Small Business, and Applied Computerised Accounting.');
                     }, 800);
                     setTimeout(() => {
                         addMessage('bot', 'We also offer Certificate programmes in: Digital Marketing, Data Analyst, Front End/Back End/Full Stack Web Development, AI courses, Microsoft certifications, Cisco certifications, and Autodesk courses.');
