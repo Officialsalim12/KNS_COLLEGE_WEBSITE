@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Application Form - KNS College</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .payment-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .course-summary-box {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: #ffffff;
+            padding: var(--spacing-xl);
+            border-radius: 12px;
+            margin-bottom: var(--spacing-xl);
+            box-shadow: 0 4px 16px rgba(26, 77, 122, 0.2);
+        }
+        
+        .course-summary-box h2 {
+            color: #ffffff;
+            margin-bottom: var(--spacing-md);
+            font-size: 1.5rem;
+        }
+        
+        .course-summary-box #courseSummary {
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.8;
+        }
+        
+        .course-summary-box #courseSummary strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .fee-highlight {
+            background: rgba(255, 255, 255, 0.15);
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            margin-top: var(--spacing-md);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .fee-highlight p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .fee-highlight .fee-amount {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-left: var(--spacing-xs);
+        }
+        
+        .payment-form-container {
+            background: var(--background-color);
+            padding: var(--spacing-xl);
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+        }
+        
+        .payment-form-container h2 {
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.5rem;
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        .form-section-title {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+            padding-top: var(--spacing-md);
+            border-top: 2px solid var(--border-color);
+        }
+        
+        .form-section-title:first-of-type {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+        
+        .corporate-form select {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: var(--font-primary);
+            font-size: 1rem;
+            background-color: var(--background-color);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .corporate-form select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(26, 77, 122, 0.1);
+        }
+        
+        .payment-summary-box {
+            background: var(--background-light);
+            padding: var(--spacing-lg);
+            border-radius: 8px;
+            border: 2px solid var(--primary-color);
+            margin-top: var(--spacing-lg);
+        }
+        
+        .payment-summary-box .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+            font-size: 1.05rem;
+        }
+        
+        .payment-summary-box .summary-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 2px solid var(--border-color);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        
+        .payment-summary-box .summary-total .amount {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+        
+        .form-note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: 4px;
+            margin-top: var(--spacing-md);
+            font-size: 0.9rem;
+            color: #856404;
+        }
+        
+        .required-indicator {
+            color: var(--error-color);
+            margin-left: 2px;
+        }
+        
+        @media (max-width: 768px) {
+            .payment-form-container {
+                padding: var(--spacing-md);
+            }
+            
+            .course-summary-box {
+                padding: var(--spacing-md);
+            }
+            
+            .payment-form-container form > div[style*="grid"] {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .payment-summary-box .summary-row,
+            .payment-summary-box .summary-total {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-xs);
+            }
+            
+            .payment-summary-box .summary-total .amount {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Header Navigation -->
+    <header class="top-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <a href="index.html" class="logo">
+                        <img src="images/kns-college-logo.png" alt="KNS College Logo" class="logo-image">
+                        <div class="logo-text-container">
+                            <span class="logo-text">Knowledge</span>
+                            <span class="logo-text">Network</span>
+                            <span class="logo-text">Solutions</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-menu">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li class="has-dropdown">
+                            <a href="Programmes.html">Programmes <span class="dropdown-arrow">▼</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="Programmes.html#train-certify">Train and Certify Courses</a></li>
+                                <li><a href="Programmes.html#diploma">Diploma Programmes</a></li>
+                                <li><a href="Programmes.html#certificate">Certificate Programmes</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="corporate-training.html">Corporate Training</a></li>
+                        <li><a href="certifications.html">Certifications</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content-full">
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Course Application Form</h1>
+                <p class="page-subtitle">Fill in your information to apply for the course</p>
+            </div>
+        </section>
+
+        <!-- Payment Content -->
+        <section class="content-section">
+            <div class="container">
+                <div class="payment-wrapper" style="max-width: 800px; margin: 0 auto;">
+                    <!-- Success Message (hidden by default) -->
+                    <div id="successMessage" style="display: none; max-width: 700px; margin: 0 auto; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; padding: var(--spacing-xl); border-radius: 12px; box-shadow: 0 4px 16px rgba(40, 167, 69, 0.3); text-align: center;">
+                        <div style="font-size: 4rem; margin-bottom: var(--spacing-md);">✓</div>
+                        <h2 style="color: #ffffff; margin-bottom: var(--spacing-md); font-size: 2rem;">Payment Successful!</h2>
+                        <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: var(--spacing-lg); opacity: 0.95;">
+                            Thank you! You have completed your application payment. Wait for your PIN which will be sent via email with the portal URL to proceed with your course application.
+                        </p>
+                        <div style="background: rgba(255, 255, 255, 0.2); padding: var(--spacing-md); border-radius: 8px; margin-top: var(--spacing-lg);">
+                            <p style="margin: 0; font-size: 0.95rem; opacity: 0.9;">
+                                <strong>Course:</strong> <span id="successCourseName"></span>
+                            </p>
+                        </div>
+                        <div style="margin-top: var(--spacing-lg);">
+                            <a href="index.html" class="btn" style="background: #ffffff; color: #28a745; padding: var(--spacing-sm) var(--spacing-lg); text-decoration: none; border-radius: 4px; font-weight: 600; display: inline-block; transition: all 0.3s ease;">
+                                Return to Home
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Message (hidden by default) -->
+                    <div id="errorMessage" style="display: none; max-width: 700px; margin: 0 auto; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: #ffffff; padding: var(--spacing-xl); border-radius: 12px; box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3); text-align: center;">
+                        <div style="font-size: 4rem; margin-bottom: var(--spacing-md);">✗</div>
+                        <h2 style="color: #ffffff; margin-bottom: var(--spacing-md); font-size: 2rem;">Payment Failed</h2>
+                        <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: var(--spacing-lg); opacity: 0.95;">
+                            Your payment has failed. Try again or contact our support, use our line.
+                        </p>
+                        <div style="background: rgba(255, 255, 255, 0.2); padding: var(--spacing-md); border-radius: 8px; margin-top: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+                            <p style="margin: 0 0 var(--spacing-xs) 0; font-size: 0.95rem; opacity: 0.9;">
+                                <strong>📞 Support:</strong>
+                            </p>
+                            <p style="margin: 0; font-size: 1rem;">
+                                Phone / WhatsApp: <strong>+232 79 422 442</strong>
+                            </p>
+                            <p style="margin: var(--spacing-xs) 0 0 0; font-size: 1rem;">
+                                Email: <strong>admission@kns.edu.sl</strong>
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: var(--spacing-md); justify-content: center; flex-wrap: wrap; margin-top: var(--spacing-lg);">
+                            <a href="#" onclick="location.reload(); return false;" class="btn" style="background: #ffffff; color: #dc3545; padding: var(--spacing-sm) var(--spacing-lg); text-decoration: none; border-radius: 4px; font-weight: 600; display: inline-block; transition: all 0.3s ease;">
+                                Try Again
+                            </a>
+                            <a href="contact.html" class="btn" style="background: rgba(255, 255, 255, 0.2); color: #ffffff; border: 2px solid #ffffff; padding: var(--spacing-sm) var(--spacing-lg); text-decoration: none; border-radius: 4px; font-weight: 600; display: inline-block; transition: all 0.3s ease;">
+                                Contact Support
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Course Summary -->
+                    <div class="course-summary-box" id="courseSummaryBox">
+                        <h2>📋 Course Application</h2>
+                        <div id="courseSummary">
+                            <!-- Course details will be populated by JavaScript -->
+                        </div>
+                        <div class="fee-highlight">
+                            <p style="margin: 0 0 var(--spacing-xs) 0; font-size: 0.95rem; opacity: 0.9;">Application Fee</p>
+                            <p style="margin: 0;">
+                                <strong>Le250</strong>
+                                <span style="font-size: 0.85rem; opacity: 0.9; margin-left: var(--spacing-xs);">(one-time processing fee)</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Application Form -->
+                    <div class="payment-form-container" id="applicationForm">
+                        <h2>👤 Applicant Information</h2>
+                        <form id="paymentForm" class="corporate-form">
+                            <h3 class="form-section-title">Personal Details</h3>
+                            
+                            <div class="form-group">
+                                <label for="fullName">Full Name<span class="required-indicator">*</span></label>
+                                <input type="text" id="fullName" name="fullName" required placeholder="Enter your full name">
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                                <div class="form-group">
+                                    <label for="email">Email Address<span class="required-indicator">*</span></label>
+                                    <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="phone">Phone Number<span class="required-indicator">*</span></label>
+                                    <input type="tel" id="phone" name="phone" required placeholder="+232 XX XXX XXXX">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="address">Address<span class="required-indicator">*</span></label>
+                                <input type="text" id="address" name="address" required placeholder="Street address">
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                                <div class="form-group">
+                                    <label for="city">City<span class="required-indicator">*</span></label>
+                                    <input type="text" id="city" name="city" required placeholder="City">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="country">Country<span class="required-indicator">*</span></label>
+                                    <input type="text" id="country" name="country" value="Sierra Leone" required>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                                <div class="form-group">
+                                    <label for="dateOfBirth">Date of Birth<span class="required-indicator">*</span></label>
+                                    <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="gender">Gender<span class="required-indicator">*</span></label>
+                                    <select id="gender" name="gender" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h3 class="form-section-title">Emergency Contact</h3>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                                <div class="form-group">
+                                    <label for="emergencyContact">Emergency Contact Name<span class="required-indicator">*</span></label>
+                                    <input type="text" id="emergencyContact" name="emergencyContact" required placeholder="Full name">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="emergencyPhone">Emergency Contact Phone<span class="required-indicator">*</span></label>
+                                    <input type="tel" id="emergencyPhone" name="emergencyPhone" required placeholder="+232 XX XXX XXXX">
+                                </div>
+                            </div>
+
+                            <h3 class="form-section-title">Programme Preferences</h3>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                                <div class="form-group">
+                                    <label for="deliveryMode">Preferred Delivery Mode<span class="required-indicator">*</span></label>
+                                    <select id="deliveryMode" name="deliveryMode" required>
+                                        <option value="">Select Delivery Mode</option>
+                                        <option value="Online">Online</option>
+                                        <option value="Hybrid">Hybrid (Online + In-person)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="intakePeriod">Preferred Intake Period<span class="required-indicator">*</span></label>
+                                    <select id="intakePeriod" name="intakePeriod" required>
+                                        <option value="">Select Intake Period</option>
+                                        <option value="January">January</option>
+                                        <option value="May">May</option>
+                                        <option value="September">September</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="payment-summary-box">
+                                <div class="summary-row">
+                                    <span>Application Processing Fee</span>
+                                    <span id="totalAmount" class="amount">Le250</span>
+                                </div>
+                                <div class="summary-total">
+                                    <span>Total Amount</span>
+                                    <span class="amount">Le250</span>
+                                </div>
+                                <div class="form-note">
+                                    <strong>Note:</strong> This is a one-time application processing fee. Tuition fees will be discussed after your application is approved.
+                                </div>
+                            </div>
+
+                            <div style="margin-top: var(--spacing-xl);">
+                                <button type="submit" class="btn btn-primary btn-block" style="padding: var(--spacing-md) var(--spacing-xl); font-size: 1.1rem; font-weight: 700;">
+                                    ✓ Submit Application & Pay Fee
+                                </button>
+                                <p style="text-align: center; margin-top: var(--spacing-sm); font-size: 0.85rem; color: var(--text-light);">
+                                    By submitting, you will be redirected to Monime to complete the payment
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="footer-title">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="Programmes.html">Programmes</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Campus Location</h4>
+                    <ul class="footer-links">
+                        <li>18 Dundas Street</li>
+                        <li>Freetown, Sierra Leone</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://kns.fedena.com/user/dashboard">Student Portal</a></li>
+                        <li><a href="https://kns.fedena.com/library">Library</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Contact</h4>
+                    <ul class="footer-links">
+                        <li>Phone / WhatsApp: +232 79 422 442</li>
+                        <li>Email: admission@kns.edu.sl</li>
+                        <li>Website: www.kns.sl</li>
+                        <li>Location: 18 Dundas Street, Freetown, Sierra Leone</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <span class="separator">|</span>
+                    <a href="#">Terms of Service</a>
+                    <span class="separator">|</span>
+                    <a href="#">Accessibility</a>
+                </div>
+                <p class="copyright">&copy; 2025 KNS College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseName = urlParams.get('course') || 'Diploma Programme';
+        const courseCost = urlParams.get('cost') || '0';
+        const paymentStatus = urlParams.get('status');
+        const paymentSuccess = urlParams.get('success');
+        const paymentError = urlParams.get('error');
+        const paymentFailed = urlParams.get('failed');
+        
+        // Check payment status and show appropriate message
+        function handlePaymentStatus() {
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const courseSummaryBox = document.getElementById('courseSummaryBox');
+            const applicationForm = document.getElementById('applicationForm');
+            const successCourseName = document.getElementById('successCourseName');
+            
+            // Check for success
+            const isSuccess = paymentStatus === 'success' || paymentSuccess === 'true' || paymentSuccess === '1';
+            // Check for failure
+            const isFailed = paymentStatus === 'failed' || paymentStatus === 'error' || 
+                           paymentError === 'true' || paymentError === '1' || 
+                           paymentFailed === 'true' || paymentFailed === '1';
+            
+            if (isSuccess && successMessage) {
+                // Hide form and course summary
+                if (courseSummaryBox) courseSummaryBox.style.display = 'none';
+                if (applicationForm) applicationForm.style.display = 'none';
+                if (errorMessage) errorMessage.style.display = 'none';
+                
+                // Show success message
+                successMessage.style.display = 'block';
+                if (successCourseName) {
+                    successCourseName.textContent = decodeURIComponent(courseName);
+                }
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (isFailed && errorMessage) {
+                // Hide form and course summary
+                if (courseSummaryBox) courseSummaryBox.style.display = 'none';
+                if (applicationForm) applicationForm.style.display = 'none';
+                if (successMessage) successMessage.style.display = 'none';
+                
+                // Show error message
+                errorMessage.style.display = 'block';
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+        
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            handlePaymentStatus();
+            
+            // Update payment status in database if returning from payment gateway
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('status');
+            const paymentSuccess = urlParams.get('success');
+            const paymentError = urlParams.get('error');
+            const paymentFailed = urlParams.get('failed');
+            const paymentRef = urlParams.get('reference') || urlParams.get('ref');
+            
+            const isSuccess = paymentStatus === 'success' || paymentSuccess === 'true' || paymentSuccess === '1';
+            const isFailed = paymentStatus === 'failed' || paymentStatus === 'error' || 
+                           paymentError === 'true' || paymentError === '1' || 
+                           paymentFailed === 'true' || paymentFailed === '1';
+            
+            if ((isSuccess || isFailed) && paymentRef) {
+                try {
+                    const apiUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
+                        ? CONFIG.API_BASE_URL 
+                        : 'http://localhost:3000';
+                    
+                    // First, find the payment by reference
+                    const paymentsResponse = await fetch(`${apiUrl}/api/payments?reference=${encodeURIComponent(paymentRef)}`);
+                    if (paymentsResponse.ok) {
+                        const paymentsData = await paymentsResponse.json();
+                        if (paymentsData.payments && paymentsData.payments.length > 0) {
+                            const paymentId = paymentsData.payments[0].id;
+                            const newStatus = isSuccess ? 'success' : 'failed';
+                            
+                            // Update payment status
+                            const updateResponse = await fetch(`${apiUrl}/api/payments/${paymentId}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    paymentStatus: newStatus,
+                                    paymentReference: paymentRef
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                console.log('Payment status updated:', newStatus);
+                            }
+                        } else {
+                            // If payment not found by reference, try to find by email and course (fallback)
+                            console.log('Payment not found by reference, attempting fallback lookup');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error updating payment status:', error);
+                }
+            }
+        });
+
+        // Display course summary
+        document.getElementById('courseSummary').innerHTML = `
+            <p style="margin-bottom: var(--spacing-sm);"><strong>📚 Course:</strong> ${decodeURIComponent(courseName)}</p>
+            <p style="margin-bottom: var(--spacing-sm);"><strong>⏱️ Duration:</strong> 2 Years (4 Semesters)</p>
+            <p style="margin: 0;"><strong>🎓 Credential:</strong> Diploma + Industry Certifications</p>
+        `;
+
+        // Fixed application fee
+        const APPLICATION_FEE = 250;
+
+        // Handle form submission
+        document.getElementById('paymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const deliveryMode = formData.get('deliveryMode');
+            
+            // Validate required fields
+            if (!deliveryMode) {
+                alert('Please select a delivery mode');
+                document.getElementById('deliveryMode').focus();
+                return;
+            }
+            
+            const intakePeriod = formData.get('intakePeriod');
+            if (!intakePeriod) {
+                alert('Please select an intake period');
+                document.getElementById('intakePeriod').focus();
+                return;
+            }
+            
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = 'Processing...';
+
+            // Collect all form data
+            const applicationData = {
+                courseName: decodeURIComponent(courseName),
+                fullName: formData.get('fullName'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                address: formData.get('address'),
+                city: formData.get('city'),
+                country: formData.get('country'),
+                dateOfBirth: formData.get('dateOfBirth'),
+                gender: formData.get('gender'),
+                emergencyContact: formData.get('emergencyContact'),
+                emergencyPhone: formData.get('emergencyPhone'),
+                deliveryMode: deliveryMode,
+                intakePeriod: formData.get('intakePeriod'),
+                applicationFee: APPLICATION_FEE
+            };
+
+            // Generate payment reference
+            const paymentReference = `KNS-APP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // Save payment record to database before redirecting
+            try {
+                const apiUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
+                    ? CONFIG.API_BASE_URL 
+                    : 'http://localhost:3000';
+                
+                const paymentResponse = await fetch(`${apiUrl}/api/payments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...applicationData,
+                        paymentReference: paymentReference,
+                        paymentStatus: 'pending'
+                    })
+                });
+
+                if (!paymentResponse.ok) {
+                    const errorData = await paymentResponse.json();
+                    console.error('Error saving payment record:', errorData);
+                    // Continue with payment flow even if saving fails
+                } else {
+                    const result = await paymentResponse.json();
+                    console.log('Payment record saved:', result);
+                }
+            } catch (error) {
+                console.error('Error saving payment record:', error);
+                // Continue with payment flow even if saving fails
+            }
+
+            // Build Monime payment URL with parameters
+            // Get Monime endpoint from config if available, otherwise use default
+            const monimeEndpoint = (typeof CONFIG !== 'undefined' && CONFIG.MONIME_ENDPOINT) 
+                ? CONFIG.MONIME_ENDPOINT 
+                : 'https://monime.com/payment'; // Replace with actual Monime endpoint
+            
+            // Create a form to submit to Monime
+            const monimeForm = document.createElement('form');
+            monimeForm.method = 'POST';
+            monimeForm.action = monimeEndpoint;
+            monimeForm.target = '_self';
+
+            // Add payment parameters (adjust field names based on Monime API requirements)
+            const params = {
+                'amount': APPLICATION_FEE,
+                'currency': 'SLE', // Sierra Leone Leones
+                'description': `Application Fee for ${applicationData.courseName}`,
+                'customer_name': applicationData.fullName,
+                'customer_email': applicationData.email,
+                'customer_phone': applicationData.phone,
+                'reference': paymentReference,
+                'return_url': `${window.location.origin}/payment.html?course=${encodeURIComponent(courseName)}&cost=${courseCost}&status=success&success=true`,
+                'cancel_url': `${window.location.origin}/payment.html?course=${encodeURIComponent(courseName)}&cost=${courseCost}&status=failed&failed=true`,
+                'error_url': `${window.location.origin}/payment.html?course=${encodeURIComponent(courseName)}&cost=${courseCost}&status=failed&error=true`,
+                'metadata': JSON.stringify({
+                    type: 'application',
+                    course: applicationData.courseName,
+                    deliveryMode: applicationData.deliveryMode,
+                    intakePeriod: applicationData.intakePeriod,
+                    address: applicationData.address,
+                    city: applicationData.city,
+                    country: applicationData.country,
+                    dateOfBirth: applicationData.dateOfBirth,
+                    gender: applicationData.gender,
+                    emergencyContact: applicationData.emergencyContact,
+                    emergencyPhone: applicationData.emergencyPhone
+                })
+            };
+
+            // Add all parameters as hidden inputs
+            for (const [key, value] of Object.entries(params)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                monimeForm.appendChild(input);
+            }
+
+            // Append form to body and submit
+            document.body.appendChild(monimeForm);
+            
+            // Small delay to ensure form is ready
+            setTimeout(() => {
+                monimeForm.submit();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
+
