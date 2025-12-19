@@ -827,6 +827,417 @@ body {
     min-height: 120px;
 }
 
+/* Course Selection Group Styles */
+.form-help-text {
+    font-size: 0.9em;
+    color: var(--text-light);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.5;
+}
+
+.course-selection-group {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+}
+
+.course-selection-group .form-group {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.course-selection-group .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.course-select-field {
+    width: 100%;
+    padding: var(--spacing-sm);
+    padding-right: calc(var(--spacing-sm) + 25px);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-primary);
+    font-size: 0.95rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-sm) center;
+    background-size: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Desktop: Ensure dropdown opens downward */
+@media (min-width: 1025px) {
+    .course-select-field {
+        /* Ensure proper positioning for dropdown */
+        position: relative;
+        z-index: 10;
+    }
+    
+    .course-selection-group .form-group {
+        position: relative;
+        overflow: visible;
+        z-index: auto;
+    }
+    
+    /* Ensure there's enough space below for dropdown to open */
+    .course-selection-group {
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-md);
+    }
+    
+    /* Prevent upward opening by ensuring container has space below */
+    .enquiry-form .form-group:has(.course-selection-group) {
+        position: relative;
+        overflow: visible;
+        padding-bottom: var(--spacing-lg);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    /* Ensure the form container allows dropdowns to expand downward */
+    .enquiry-form-container {
+        overflow: visible;
+        padding-bottom: var(--spacing-xl);
+    }
+    
+    /* When select is focused, ensure it's positioned to open downward */
+    .course-select-field:focus {
+        z-index: 100;
+        position: relative;
+    }
+    
+    /* Ensure parent containers don't clip the dropdown */
+    .enquiry-form,
+    .enquiry-wrapper {
+        overflow: visible;
+    }
+}
+
+.course-select-field:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(26, 77, 122, 0.1);
+}
+
+.course-select-field:disabled {
+    background-color: var(--background-light);
+    cursor: not-allowed;
+    opacity: 0.6;
+    color: var(--text-light);
+}
+
+.course-select-field:disabled:hover {
+    border-color: var(--border-color);
+    box-shadow: none;
+}
+
+/* Dropdown options styling for responsive design */
+.course-select-field option {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.course-select-field optgroup {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    padding: var(--spacing-xs) 0;
+    background-color: var(--background-light);
+}
+
+.course-select-field optgroup option {
+    padding-left: var(--spacing-md);
+    font-weight: normal;
+    color: var(--text-color);
+}
+
+/* Ensure select field doesn't overflow container */
+.course-selection-group .form-group {
+    min-width: 0; /* Allows grid items to shrink below content size */
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Ensure parent container allows proper overflow handling */
+.enquiry-form .form-group:has(.course-selection-group) {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    box-sizing: border-box;
+}
+
+.course-select-field {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* For selected text that's too long */
+.course-select-field option:checked {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Tablet Responsive - 2 columns */
+@media (max-width: 1024px) {
+    .course-selection-group {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+    
+    .course-selection-group .form-group:last-child {
+        grid-column: 1 / -1; /* General field spans full width */
+    }
+    
+    .course-select-field {
+        font-size: 0.9rem;
+        padding-right: calc(var(--spacing-sm) + 22px);
+    }
+    
+    .course-select-field option {
+        font-size: 0.9rem;
+        padding: 8px var(--spacing-sm);
+    }
+    
+    .course-select-field optgroup {
+        font-size: 0.85rem;
+    }
+}
+
+/* Mobile Responsive - Single column */
+@media (max-width: 768px) {
+    .course-selection-group {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .course-selection-group .form-group {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0 0 var(--spacing-md) 0;
+    }
+    
+    .course-selection-group .form-group:last-child {
+        grid-column: 1; /* Reset to single column */
+        margin-bottom: 0;
+    }
+    
+    .course-selection-group .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: var(--spacing-xs);
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .course-select-field {
+        font-size: 0.95rem;
+        padding: var(--spacing-sm);
+        padding-right: calc(var(--spacing-sm) + 22px);
+        min-height: 44px; /* Better touch target */
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .course-select-field option {
+        font-size: 0.9rem;
+        padding: 10px var(--spacing-sm);
+        max-width: 100vw;
+        word-wrap: break-word;
+        white-space: normal;
+        line-height: 1.5;
+    }
+    
+    .course-select-field optgroup {
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+    
+    .course-select-field optgroup option {
+        padding-left: var(--spacing-md);
+        font-size: 0.9rem;
+    }
+    
+    .form-help-text {
+        font-size: 0.85em;
+        margin-bottom: var(--spacing-sm);
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Small Mobile Responsive */
+@media (max-width: 480px) {
+    .course-selection-group {
+        gap: var(--spacing-sm);
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 0;
+    }
+    
+    .course-selection-group .form-group {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 0;
+    }
+    
+    .course-selection-group .form-group label {
+        font-size: 0.85rem;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .course-select-field {
+        font-size: 0.9rem;
+        padding: 10px var(--spacing-sm);
+        padding-right: calc(var(--spacing-sm) + 20px);
+        background-size: 11px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+    
+    .course-select-field option {
+        font-size: 0.85rem;
+        padding: 8px var(--spacing-sm);
+        max-width: calc(100vw - 40px);
+        word-wrap: break-word;
+        white-space: normal;
+        line-height: 1.4;
+        overflow-wrap: break-word;
+    }
+    
+    .course-select-field optgroup {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px var(--spacing-sm);
+    }
+    
+    .course-select-field optgroup option {
+        font-size: 0.85rem;
+        padding-left: var(--spacing-md);
+    }
+    
+    .form-help-text {
+        font-size: 0.8em;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+/* Extra Small Mobile - Very small screens */
+@media (max-width: 360px) {
+    .course-selection-group {
+        width: 100%;
+        max-width: 100vw;
+        padding: 0;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .course-select-field {
+        font-size: 0.85rem;
+        padding: 8px var(--spacing-xs);
+        padding-right: calc(var(--spacing-xs) + 18px);
+        background-size: 10px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    
+    .course-select-field option {
+        font-size: 0.8rem;
+        padding: 6px var(--spacing-xs);
+        max-width: calc(100vw - 30px);
+        word-wrap: break-word;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+    
+    .course-select-field optgroup {
+        font-size: 0.75rem;
+        padding: 5px var(--spacing-xs);
+    }
+    
+    .course-selection-group .form-group {
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    .course-selection-group .form-group label {
+        font-size: 0.8rem;
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Ensure course selection group doesn't overflow on any device */
+.enquiry-form-container,
+.enquiry-form,
+.enquiry-form .form-group:has(.course-selection-group) {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .enquiry-form-container,
+    .enquiry-form,
+    .enquiry-form .form-group:has(.course-selection-group) {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+        box-sizing: border-box;
+    }
+    
+    .course-selection-group {
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
 .submit-btn {
     background-color: var(--primary-color);
     color: #ffffff;

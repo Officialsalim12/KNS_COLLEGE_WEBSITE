@@ -1,54 +1,119 @@
 /**
  * Enquiry Form Handler
- * Handles enquiry form submission using EmailJS (no database or backend required)
- * 
- * Uses the same EmailJS configuration as the contact form
+ * Handles enquiry form submission using SendGrid via backend API
+ * Sends emails to: enquiry@netlink.sl
  */
-
-// EmailJS Configuration (shared with contact form)
-// Replace these with your EmailJS credentials
-const ENQUIRY_EMAILJS_CONFIG = {
-    PUBLIC_KEY: 'YOUR_PUBLIC_KEY',        // Your EmailJS Public Key
-    SERVICE_ID: 'YOUR_SERVICE_ID',        // Your EmailJS Service ID (can be same as contact form)
-    TEMPLATE_ID: 'YOUR_ENQUIRY_TEMPLATE_ID', // Your EmailJS Template ID for enquiries
-    TO_EMAIL: 'admission@kns.edu.sl'     // Recipient email address
-};
 
 document.addEventListener('DOMContentLoaded', function() {
     const enquiryForm = document.getElementById('enquiryForm');
     
+    // Handle mutual exclusivity for course selection fields
+    const courseSelectFields = document.querySelectorAll('.course-select-field');
+    const programmeInterestHidden = document.getElementById('programme_interest');
+    
+    // Ensure dropdowns open downward on desktop
+    function ensureDownwardDropdown() {
+        if (window.innerWidth >= 1025) {
+            courseSelectFields.forEach(select => {
+                // Ensure the select field and its container have proper positioning
+                const formGroup = select.closest('.form-group');
+                if (formGroup) {
+                    formGroup.style.position = 'relative';
+                    formGroup.style.overflow = 'visible';
+                }
+                
+                // On focus/click, ensure dropdown opens downward
+                select.addEventListener('mousedown', function(e) {
+                    // Check available space
+                    const rect = this.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const spaceBelow = viewportHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+                    
+                    // If there's significantly more space above than below, 
+                    // scroll slightly to encourage downward opening
+                    if (spaceAbove > spaceBelow && spaceBelow < 400) {
+                        // Small scroll adjustment to ensure dropdown opens downward
+                        setTimeout(() => {
+                            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                            window.scrollTo({
+                                top: currentScroll + 50,
+                                behavior: 'smooth'
+                            });
+                        }, 10);
+                    }
+                });
+            });
+        }
+    }
+    
+    // Run on load and resize
+    ensureDownwardDropdown();
+    window.addEventListener('resize', function() {
+        ensureDownwardDropdown();
+    });
+    
+    if (courseSelectFields.length > 0) {
+        courseSelectFields.forEach(field => {
+            field.addEventListener('change', function() {
+                const selectedValue = this.value;
+                
+                // If a value is selected in this field
+                if (selectedValue) {
+                    // Clear and disable all other course selection fields
+                    courseSelectFields.forEach(otherField => {
+                        if (otherField !== this) {
+                            otherField.value = '';
+                            otherField.disabled = true;
+                        }
+                    });
+                    
+                    // Update the hidden field with the selected value
+                    if (programmeInterestHidden) {
+                        programmeInterestHidden.value = selectedValue;
+                    }
+                } else {
+                    // If this field is cleared, enable all fields
+                    courseSelectFields.forEach(otherField => {
+                        otherField.disabled = false;
+                    });
+                    
+                    // Clear the hidden field
+                    if (programmeInterestHidden) {
+                        programmeInterestHidden.value = '';
+                    }
+                }
+            });
+        });
+    }
+    
     if (enquiryForm) {
         enquiryForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            // Check if EmailJS is loaded
-            if (typeof emailjs === 'undefined') {
-                showEnquiryMessage('error', 'Email service is not configured. Please contact the administrator.');
-                return;
-            }
-            
-            // Check if EmailJS is configured
-            if (ENQUIRY_EMAILJS_CONFIG.PUBLIC_KEY === 'YOUR_PUBLIC_KEY' || 
-                ENQUIRY_EMAILJS_CONFIG.SERVICE_ID === 'YOUR_SERVICE_ID' || 
-                ENQUIRY_EMAILJS_CONFIG.TEMPLATE_ID === 'YOUR_ENQUIRY_TEMPLATE_ID') {
-                showEnquiryMessage('error', 'Email service is not configured. Please contact the administrator.');
-                console.error('EmailJS is not configured. Please update ENQUIRY_EMAILJS_CONFIG in enquiry-form-handler.js');
-                return;
-            }
             
             // Get form data
             const formData = new FormData(enquiryForm);
             const name = formData.get('name');
             const email = formData.get('email');
             const phone = formData.get('phone');
-            const programmeInterest = formData.get('programme_interest');
             const preferredIntake = formData.get('preferred_intake');
             const message = formData.get('message');
             const newsletter = formData.get('newsletter') === 'yes';
             
+            // Get the selected programme from the hidden field or from any selected course field
+            let programmeInterest = programmeInterestHidden ? programmeInterestHidden.value : '';
+            if (!programmeInterest) {
+                // Fallback: check each course field to find the selected one
+                courseSelectFields.forEach(field => {
+                    if (field.value) {
+                        programmeInterest = field.value;
+                    }
+                });
+            }
+            
             // Validate required fields
             if (!name || !email || !programmeInterest) {
-                showEnquiryMessage('error', 'Please fill in all required fields.');
+                showEnquiryMessage('error', 'Please fill in all required fields and select a programme from one of the course fields.');
                 return;
             }
             
@@ -61,49 +126,78 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.textContent = 'Submitting...';
             
             try {
-                // Initialize EmailJS with public key
-                emailjs.init(ENQUIRY_EMAILJS_CONFIG.PUBLIC_KEY);
+                // Get API base URL from config
+                const apiBaseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
+                    ? CONFIG.API_BASE_URL 
+                    : 'http://localhost:3000';
                 
-                // Prepare template parameters
-                const templateParams = {
-                    to_email: ENQUIRY_EMAILJS_CONFIG.TO_EMAIL,
-                    from_name: name,
-                    from_email: email,
-                    phone: phone || 'Not provided',
-                    programme_interest: programmeInterest,
-                    preferred_intake: preferredIntake || 'Not specified',
-                    message: message || 'No additional message',
-                    newsletter: newsletter ? 'Yes' : 'No',
-                    date: new Date().toLocaleString()
-                };
+                const endpoint = (typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS && CONFIG.ENDPOINTS.ENQUIRIES)
+                    ? CONFIG.ENDPOINTS.ENQUIRIES
+                    : '/api/enquiries';
                 
-                // Send email using EmailJS
-                const response = await emailjs.send(
-                    ENQUIRY_EMAILJS_CONFIG.SERVICE_ID,
-                    ENQUIRY_EMAILJS_CONFIG.TEMPLATE_ID,
-                    templateParams
-                );
+                // Send form data to backend API
+                const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        phone: phone || null,
+                        programme_interest: programmeInterest,
+                        preferred_intake: preferredIntake || null,
+                        message: message || null,
+                        newsletter: newsletter
+                    })
+                });
                 
-                // Check if email was sent successfully
-                if (response.status === 200) {
+                // Check if response is ok before parsing JSON
+                if (!response.ok) {
+                    let errorText = 'Failed to submit enquiry';
+                    try {
+                        const errorData = await response.json();
+                        errorText = errorData.error || errorText;
+                    } catch (e) {
+                        errorText = `Server error: ${response.status} ${response.statusText}`;
+                    }
+                    throw new Error(errorText);
+                }
+                
+                const result = await response.json();
+                
+                // Check if request was successful
+                if (result.success) {
                     // Show success message
                     showEnquiryMessage('success', 'Thank you for your enquiry! Our admissions team will contact you soon with detailed information about the programme.');
                     
                     // Reset form
                     enquiryForm.reset();
+                    
+                    // Re-enable all course selection fields after reset
+                    courseSelectFields.forEach(field => {
+                        field.disabled = false;
+                    });
                 } else {
-                    throw new Error('Failed to send email');
+                    throw new Error(result.error || 'Failed to submit enquiry');
                 }
             } catch (error) {
                 console.error('Error submitting enquiry form:', error);
                 
                 // Handle different types of errors
-                const errorMessage = error.text || error.message || error.toString() || '';
+                const errorMessage = error.message || error.toString() || '';
+                const errorName = error.name || '';
                 
-                if (errorMessage.includes('Invalid template ID') || errorMessage.includes('Invalid service ID')) {
-                    showEnquiryMessage('error', 'Email service configuration error. Please contact the administrator.');
-                } else if (errorMessage.includes('Quota') || errorMessage.includes('limit')) {
-                    showEnquiryMessage('error', 'Email service quota exceeded. Please try again later or contact us directly at +232 79 422 442.');
+                // Check for network/fetch errors
+                if (errorName === 'TypeError' || 
+                    errorMessage.includes('Failed to fetch') || 
+                    errorMessage.includes('NetworkError') ||
+                    errorMessage.includes('network') ||
+                    errorMessage.includes('ECONNREFUSED') ||
+                    errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+                    showEnquiryMessage('error', 'Cannot connect to server. Please make sure the server is running. If you\'re testing locally, start the server with: npm start');
+                } else if (errorMessage.includes('Server error')) {
+                    showEnquiryMessage('error', errorMessage);
                 } else {
                     showEnquiryMessage('error', 'Sorry, there was an error submitting your enquiry. Please try again later or contact us directly at +232 79 422 442.');
                 }

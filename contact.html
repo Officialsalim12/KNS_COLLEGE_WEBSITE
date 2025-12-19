@@ -85,48 +85,71 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="enquiry-programme">Programme/Course of Interest <span class="required">*</span></label>
-                                <select id="enquiry-programme" name="programme_interest" required>
-                                    <option value="">Select a programme or course</option>
-                                    <optgroup label="Diploma Programmes - Business">
-                                        <option value="Diploma in Project Management">Diploma in Project Management</option>
-                                        <option value="Diploma in Enterprise and Small Business">Diploma in Enterprise and Small Business</option>
-                                        <option value="Diploma in Applied Computerised Accounting & Intuit QuickBooks Technology">Diploma in Applied Accounting & QuickBooks</option>
-                                        <option value="Diploma in Digital Marketing with Meta Certified">Diploma in Digital Marketing with Meta Certified</option>
-                                    </optgroup>
-                                    <optgroup label="Diploma Programmes - Technology">
-                                        <option value="Diploma in Cybersecurity">Diploma in Cybersecurity</option>
-                                        <option value="Diploma in Telecommunications">Diploma in Telecommunications</option>
-                                        <option value="Diploma in Computing & Networking">Diploma in Computing & Networking</option>
-                                        <option value="Diploma in IT with Business Management">Diploma in IT with Business Management</option>
-                                    </optgroup>
-                                    <optgroup label="Certificate Programmes">
-                                        <option value="Data Analyst">Data Analyst</option>
-                                        <option value="Front-End Web Development">Front-End Web Development</option>
-                                        <option value="Back-End Web Development">Back-End Web Development</option>
-                                        <option value="Full Stack Development">Full Stack Development</option>
-                                        <option value="Digital Marketing">Digital Marketing</option>
-                                        <option value="Microsoft Office Specialist">Microsoft Office Specialist</option>
-                                        <option value="Microsoft Azure Fundamentals (AZ-900)">Microsoft Azure Fundamentals (AZ-900)</option>
-                                        <option value="Microsoft AI Fundamentals (AI-900)">Microsoft AI Fundamentals (AI-900)</option>
-                                        <option value="Microsoft Data Fundamentals (DP-900)">Microsoft Data Fundamentals (DP-900)</option>
-                                        <option value="Microsoft Security Fundamentals (SC-900)">Microsoft Security Fundamentals (SC-900)</option>
-                                        <option value="Microsoft Power Platform Fundamentals (PL-900)">Microsoft Power Platform Fundamentals (PL-900)</option>
-                                        <option value="Microsoft 365 Fundamentals (MS-900)">Microsoft 365 Fundamentals (MS-900)</option>
-                                        <option value="Cisco IT Support">Cisco IT Support</option>
-                                        <option value="Cisco Networking">Cisco Networking</option>
-                                        <option value="Cisco Cybersecurity">Cisco Cybersecurity</option>
-                                        <option value="Autodesk AutoCAD">Autodesk AutoCAD</option>
-                                        <option value="Autodesk Revit">Autodesk Revit</option>
-                                        <option value="AI Prompt Engineering">AI Prompt Engineering</option>
-                                        <option value="AI Web Design">AI Web Design</option>
-                                    </optgroup>
-                                    <optgroup label="General">
-                                        <option value="General Information">General Information</option>
-                                        <option value="Corporate Training">Corporate Training</option>
-                                        <option value="Other">Other</option>
-                                    </optgroup>
-                                </select>
+                                <p class="form-help-text">Please select a programme from only one of the fields below:</p>
+                                
+                                <div class="course-selection-group">
+                                    <div class="form-group">
+                                        <label for="enquiry-diploma">Diploma Courses</label>
+                                        <select id="enquiry-diploma" name="diploma_course" class="course-select-field">
+                                            <option value="">Select a Diploma Course</option>
+                                            <optgroup label="Business Diploma Programmes">
+                                                <option value="Diploma in Project Management">Diploma in Project Management</option>
+                                                <option value="Diploma in Enterprise and Small Business">Diploma in Enterprise and Small Business</option>
+                                                <option value="Diploma in Applied Computerised Accounting & Intuit QuickBooks Technology">Diploma in Applied Computerised Accounting & Intuit QuickBooks Technology</option>
+                                                <option value="Diploma in Digital Marketing with Meta Certified">Diploma in Digital Marketing with Meta Certified</option>
+                                            </optgroup>
+                                            <optgroup label="Technology Diploma Programmes">
+                                                <option value="Diploma in Cybersecurity">Diploma in Cybersecurity</option>
+                                                <option value="Diploma in Telecommunications">Diploma in Telecommunications</option>
+                                                <option value="Diploma in Computing & Networking">Diploma in Computing & Networking</option>
+                                                <option value="Diploma in IT with Business Management">Diploma in IT with Business Management</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="enquiry-certificate">Certificate Courses</label>
+                                        <select id="enquiry-certificate" name="certificate_course" class="course-select-field">
+                                            <option value="">Select a Certificate Course</option>
+                                            <optgroup label="Business Certificate Programmes">
+                                                <option value="Data Analyst">Data Analyst</option>
+                                                <option value="Digital Marketing">Digital Marketing</option>
+                                            </optgroup>
+                                            <optgroup label="Technology Certificate Programmes">
+                                                <option value="Front-End Web Development">Front-End Web Development</option>
+                                                <option value="Back-End Web Development">Back-End Web Development</option>
+                                                <option value="Full Stack Development">Full Stack Development</option>
+                                                <option value="Microsoft Office Specialist">Microsoft Office Specialist</option>
+                                                <option value="Microsoft Azure Fundamentals (AZ-900)">Microsoft Azure Fundamentals (AZ-900)</option>
+                                                <option value="Microsoft AI Fundamentals (AI-900)">Microsoft AI Fundamentals (AI-900)</option>
+                                                <option value="Microsoft Data Fundamentals (DP-900)">Microsoft Data Fundamentals (DP-900)</option>
+                                                <option value="Microsoft Security Fundamentals (SC-900)">Microsoft Security Fundamentals (SC-900)</option>
+                                                <option value="Microsoft Power Platform Fundamentals (PL-900)">Microsoft Power Platform Fundamentals (PL-900)</option>
+                                                <option value="Microsoft 365 Fundamentals (MS-900)">Microsoft 365 Fundamentals (MS-900)</option>
+                                                <option value="Cisco IT Support">Cisco IT Support</option>
+                                                <option value="Cisco Networking">Cisco Networking</option>
+                                                <option value="Cisco Cybersecurity">Cisco Cybersecurity</option>
+                                                <option value="Autodesk AutoCAD">Autodesk AutoCAD</option>
+                                                <option value="Autodesk Revit">Autodesk Revit</option>
+                                                <option value="AI Prompt Engineering">AI Prompt Engineering</option>
+                                                <option value="AI Web Design">AI Web Design</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="enquiry-general">General</label>
+                                        <select id="enquiry-general" name="general_course" class="course-select-field">
+                                            <option value="">Select a General Option</option>
+                                            <option value="General Information">General Information</option>
+                                            <option value="Corporate Training">Corporate Training</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Hidden field to store the selected programme for form submission -->
+                                <input type="hidden" id="programme_interest" name="programme_interest" required>
                             </div>
                             <div class="form-group">
                                 <label for="enquiry-intake">Preferred Intake Period</label>
@@ -393,8 +416,6 @@
         </a>
     </div>
 
-    <!-- EmailJS SDK -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="config.js"></script>
     <script src="script.js"></script>
     <script src="chatbot.js"></script>
