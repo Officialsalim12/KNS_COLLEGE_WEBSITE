@@ -13,6 +13,7 @@ const CONFIG = {
     ENDPOINTS: {
         MESSAGES: '/api/messages',
         CONTACTS: '/api/contacts',
+        ENQUIRIES: '/api/enquiries',
         ENROLLMENTS: '/api/enrollments',
         PAYMENTS: '/api/payments',
         STATS: '/api/stats',

@@ -1,23 +1,8 @@
 /**
  * Contact Form Handler
- * Handles form submission using EmailJS (no database or backend required)
- * 
- * Setup Instructions:
- * 1. Sign up for a free account at https://www.emailjs.com/
- * 2. Create an email service (Gmail, Outlook, etc.)
- * 3. Create an email template
- * 4. Get your Public Key, Service ID, and Template ID
- * 5. Update the CONFIG object below with your credentials
+ * Handles form submission using SendGrid via backend API
+ * Sends emails to: admission@kns.edu.sl
  */
-
-// EmailJS Configuration
-// Replace these with your EmailJS credentials
-const EMAILJS_CONFIG = {
-    PUBLIC_KEY: 'YOUR_PUBLIC_KEY',        // Your EmailJS Public Key
-    SERVICE_ID: 'YOUR_SERVICE_ID',       // Your EmailJS Service ID
-    TEMPLATE_ID: 'YOUR_TEMPLATE_ID',      // Your EmailJS Template ID
-    TO_EMAIL: 'admission@kns.edu.sl'      // Recipient email address
-};
 
 document.addEventListener('DOMContentLoaded', function() {
     const contactForm = document.querySelector('.contact-form');
@@ -25,21 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (contactForm) {
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            // Check if EmailJS is loaded
-            if (typeof emailjs === 'undefined') {
-                showFormMessage('error', 'Email service is not configured. Please contact the administrator.');
-                return;
-            }
-            
-            // Check if EmailJS is configured
-            if (EMAILJS_CONFIG.PUBLIC_KEY === 'YOUR_PUBLIC_KEY' || 
-                EMAILJS_CONFIG.SERVICE_ID === 'YOUR_SERVICE_ID' || 
-                EMAILJS_CONFIG.TEMPLATE_ID === 'YOUR_TEMPLATE_ID') {
-                showFormMessage('error', 'Email service is not configured. Please contact the administrator.');
-                console.error('EmailJS is not configured. Please update EMAILJS_CONFIG in contact-form-handler.js');
-                return;
-            }
             
             // Get form data
             const formData = new FormData(contactForm);
@@ -65,48 +35,72 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.textContent = 'Sending...';
             
             try {
-                // Initialize EmailJS with public key
-                emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+                // Get API base URL from config
+                const apiBaseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
+                    ? CONFIG.API_BASE_URL 
+                    : 'http://localhost:3000';
                 
-                // Prepare template parameters
-                const templateParams = {
-                    to_email: EMAILJS_CONFIG.TO_EMAIL,
-                    from_name: name,
-                    from_email: email,
-                    phone: phone || 'Not provided',
-                    subject: subject,
-                    message: message,
-                    newsletter: newsletter ? 'Yes' : 'No',
-                    date: new Date().toLocaleString()
-                };
+                const endpoint = (typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS && CONFIG.ENDPOINTS.CONTACTS)
+                    ? CONFIG.ENDPOINTS.CONTACTS
+                    : '/api/contacts';
                 
-                // Send email using EmailJS
-                const response = await emailjs.send(
-                    EMAILJS_CONFIG.SERVICE_ID,
-                    EMAILJS_CONFIG.TEMPLATE_ID,
-                    templateParams
-                );
+                // Send form data to backend API
+                const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        phone: phone || null,
+                        subject: subject,
+                        message: message,
+                        newsletter: newsletter
+                    })
+                });
                 
-                // Check if email was sent successfully
-                if (response.status === 200) {
+                // Check if response is ok before parsing JSON
+                if (!response.ok) {
+                    let errorText = 'Failed to send message';
+                    try {
+                        const errorData = await response.json();
+                        errorText = errorData.error || errorText;
+                    } catch (e) {
+                        errorText = `Server error: ${response.status} ${response.statusText}`;
+                    }
+                    throw new Error(errorText);
+                }
+                
+                const result = await response.json();
+                
+                // Check if request was successful
+                if (result.success) {
                     // Show success message
                     showFormMessage('success', 'Thank you for contacting us! Your message has been sent successfully. We will get back to you soon.');
                     
                     // Reset form
                     contactForm.reset();
                 } else {
-                    throw new Error('Failed to send email');
+                    throw new Error(result.error || 'Failed to send message');
                 }
             } catch (error) {
                 console.error('Error submitting contact form:', error);
                 
                 // Handle different types of errors
-                const errorMessage = error.text || error.message || error.toString() || '';
+                const errorMessage = error.message || error.toString() || '';
+                const errorName = error.name || '';
                 
-                if (errorMessage.includes('Invalid template ID') || errorMessage.includes('Invalid service ID')) {
-                    showFormMessage('error', 'Email service configuration error. Please contact the administrator.');
-                } else if (errorMessage.includes('Quota') || errorMessage.includes('limit')) {
-                    showFormMessage('error', 'Email service quota exceeded. Please try again later or contact us directly at +232 79 422 442.');
+                // Check for network/fetch errors
+                if (errorName === 'TypeError' || 
+                    errorMessage.includes('Failed to fetch') || 
+                    errorMessage.includes('NetworkError') ||
+                    errorMessage.includes('network') ||
+                    errorMessage.includes('ECONNREFUSED') ||
+                    errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+                    showFormMessage('error', 'Cannot connect to server. Please make sure the server is running. If you\'re testing locally, start the server with: npm start');
+                } else if (errorMessage.includes('Server error')) {
+                    showFormMessage('error', errorMessage);
                 } else {
                     showFormMessage('error', 'Sorry, there was an error sending your message. Please try again later or contact us directly at +232 79 422 442.');
                 }

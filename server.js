@@ -343,7 +343,7 @@ Submitted At: ${new Date().toISOString()}
         `;
 
         const msg = {
-            to: 'enquiry@netlink.sl',
+            to: 'enquiry@kns.edu.sl',
             from: sendgridFromEmail,
             subject: subjectLine,
             text: textBody,
