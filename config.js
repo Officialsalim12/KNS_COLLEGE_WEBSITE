@@ -1,15 +1,20 @@
-/**
- * Configuration file for API endpoints
- * Update API_BASE_URL to match your server URL
- */
+function getApiBaseUrl() {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname === '';
+    
+    if (isLocalhost) {
+        return 'http://localhost:3000';
+    } else {
+        return window.location.origin;
+    }
+}
+
+const PRODUCTION_API_URL = 'knscollegewebsite-production.up.railway.app';
 
 const CONFIG = {
-    // API base URL - change this to your server URL
-    // For local development: 'http://localhost:3000'
-    // For production: 'https://your-domain.com'
-    API_BASE_URL: 'http://localhost:3000',
+    API_BASE_URL: PRODUCTION_API_URL || getApiBaseUrl(),
     
-    // API endpoints
     ENDPOINTS: {
         MESSAGES: '/api/messages',
         CONTACTS: '/api/contacts',
@@ -20,17 +25,13 @@ const CONFIG = {
         HEALTH: '/api/health'
     },
     
-    // Payment gateway endpoint
-    // Update this with your actual Monime payment endpoint URL
-    MONIME_ENDPOINT: 'https://monime.com/payment' // Replace with actual Monime endpoint
+    MONIME_ENDPOINT: 'https://monime.com/payment'
 };
 
-// Generate a unique session ID for chatbot conversations
 function generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// Get or create session ID from sessionStorage
 function getSessionId() {
     let sessionId = sessionStorage.getItem('chatbot_session_id');
     if (!sessionId) {
