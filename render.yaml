@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: kns-college-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: PORT is automatically set by Render, no need to specify it
+      # Add these environment variables in Render dashboard:
+      # - SUPABASE_URL (required)
+      # - SUPABASE_ANON_KEY (required)
+      # - SENDGRID_API_KEY (optional - for email notifications)
+      # - SENDGRID_FROM_EMAIL (optional - for email notifications)
+      # - SENDGRID_TO_EMAIL (optional - for email notifications)
+      # - CORS_ORIGIN (optional - defaults to '*' if not set)

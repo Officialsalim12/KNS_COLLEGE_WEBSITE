@@ -5,7 +5,7 @@
  */
 
 // Load environment variables
-// Try .env.local first (for local development), then .env, then use system env vars (for Railway/production)
+// Try .env.local first (for local development), then .env, then use system env vars (for production)
 const fs = require('fs');
 const path = require('path');
 
@@ -14,7 +14,7 @@ if (fs.existsSync(path.join(__dirname, '.env.local'))) {
 } else if (fs.existsSync(path.join(__dirname, '.env'))) {
     require('dotenv').config({ path: '.env' });
 } else {
-    // In production (Railway), environment variables are already set
+    // In production (Render), environment variables are already set
     // dotenv will use process.env if no file is found
     require('dotenv').config();
 }
@@ -40,7 +40,7 @@ console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
-    console.error('For Railway deployment, set these in your Railway project environment variables');
+    console.error('For production deployment, set these in your hosting platform environment variables');
     console.error('For local development, create a .env.local file with your Supabase credentials');
     process.exit(1);
 }
