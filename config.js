@@ -48,6 +48,16 @@ function getApiBaseUrl() {
     return renderBackendUrl;
 }
 
+// Calculate API base URL
+const calculatedApiBaseUrl = getApiBaseUrl();
+
+// Log configuration for debugging
+console.log('=== CONFIG.JS Loaded ===');
+console.log('Current hostname:', window.location.hostname);
+console.log('Current origin:', window.location.origin);
+console.log('Calculated API Base URL:', calculatedApiBaseUrl);
+console.log('========================');
+
 const CONFIG = {
     /**
      * API Base URL Configuration
@@ -61,7 +71,7 @@ const CONFIG = {
      * - Backend: Hosted on Render (https://kns-college-website.onrender.com)
      * - This config automatically uses the Render backend when frontend is on Sector Link
      */
-    API_BASE_URL: getApiBaseUrl(),
+    API_BASE_URL: calculatedApiBaseUrl,
     
     // API endpoints
     ENDPOINTS: {

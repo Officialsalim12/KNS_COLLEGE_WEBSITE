@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 async function loadScholarships(scholarshipsGrid) {
+    // Declare fullUrl outside try block so error handler can access it
+    let fullUrl = '';
     
     try {
         // Get API base URL from config
@@ -45,13 +47,30 @@ async function loadScholarships(scholarshipsGrid) {
             ? CONFIG.ENDPOINTS.SCHOLARSHIPS
             : '/api/scholarships';
         
-        const fullUrl = `${apiBaseUrl}${endpoint}`;
+        // Ensure endpoint starts with /
+        const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+        // Ensure apiBaseUrl doesn't end with /
+        const normalizedBaseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+        fullUrl = `${normalizedBaseUrl}${normalizedEndpoint}`;
+        
         console.log('=== Scholarships Fetch Debug ===');
-        console.log('Fetching scholarships from:', fullUrl);
-        console.log('Current origin:', window.location.origin);
+        console.log('Current Page URL:', window.location.href);
+        console.log('Current Origin:', window.location.origin);
+        console.log('Current Hostname:', window.location.hostname);
+        console.log('API Base URL:', apiBaseUrl);
+        console.log('Endpoint:', endpoint);
+        console.log('Normalized Base URL:', normalizedBaseUrl);
+        console.log('Normalized Endpoint:', normalizedEndpoint);
+        console.log('Full URL to fetch:', fullUrl);
         console.log('CONFIG available:', typeof CONFIG !== 'undefined');
         console.log('CONFIG.API_BASE_URL:', typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'N/A');
+        console.log('CONFIG.ENDPOINTS:', typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS ? CONFIG.ENDPOINTS : 'N/A');
         console.log('===============================');
+        
+        // Validate URL before making request
+        if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+            throw new Error(`Invalid API URL: ${fullUrl}. URL must start with http:// or https://`);
+        }
         
         const response = await fetch(fullUrl, {
             method: 'GET',
@@ -65,17 +84,35 @@ async function loadScholarships(scholarshipsGrid) {
         
         // Check if response is ok before parsing JSON
         if (!response.ok) {
-            let errorText;
+            const contentType = response.headers.get('content-type');
+            let errorText = '';
+            let errorJson = null;
+            
             try {
                 errorText = await response.text();
-                const errorJson = JSON.parse(errorText);
-                console.error('API response error:', response.status, response.statusText, errorJson);
-                throw new Error(errorJson.error || errorJson.details || `API request failed: ${response.status} ${response.statusText}`);
+                // Try to parse as JSON if content-type suggests it
+                if (contentType && contentType.includes('application/json')) {
+                    errorJson = JSON.parse(errorText);
+                }
             } catch (parseError) {
-                errorText = await response.text().catch(() => 'Unknown error');
-                console.error('API response error (non-JSON):', response.status, response.statusText, errorText);
-                throw new Error(`API request failed: ${response.status} ${response.statusText}. ${errorText}`);
+                // If parsing fails, use the text as-is
+                console.warn('Could not parse error response as JSON:', parseError);
             }
+            
+            console.error('API response error:', {
+                status: response.status,
+                statusText: response.statusText,
+                url: fullUrl,
+                contentType: contentType,
+                errorText: errorText,
+                errorJson: errorJson
+            });
+            
+            const errorMessage = errorJson 
+                ? (errorJson.error || errorJson.details || `API request failed: ${response.status} ${response.statusText}`)
+                : (errorText || `API request failed: ${response.status} ${response.statusText}`);
+            
+            throw new Error(errorMessage);
         }
         
         const result = await response.json();
@@ -116,8 +153,8 @@ async function loadScholarships(scholarshipsGrid) {
             errorMessage = 'Unable to connect to the server. Please check your internet connection or try again later.';
             errorDetails = 'Network error: ' + error.message;
         } else if (error.message.includes('404')) {
-            errorMessage = 'API endpoint not found. Please contact support.';
-            errorDetails = 'The scholarships API endpoint could not be found.';
+            errorMessage = 'API endpoint not found (404). The server could not find the requested endpoint.';
+            errorDetails = `The URL "${fullUrl}" returned a 404 error. Please verify the backend server is running and the endpoint exists.`;
         } else if (error.message.includes('500')) {
             errorMessage = 'Server error occurred. Please try again later.';
             errorDetails = 'Server error: ' + error.message;
