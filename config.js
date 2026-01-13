@@ -13,7 +13,12 @@ function getApiBaseUrl() {
 const PRODUCTION_API_URL = 'knscollegewebsite-production.up.railway.app';
 
 const CONFIG = {
-    API_BASE_URL: PRODUCTION_API_URL || getApiBaseUrl(),
+    // Use production URL only if not on localhost, otherwise use localhost
+    API_BASE_URL: (window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' || 
+                   window.location.hostname === '') 
+                   ? 'http://localhost:3000' 
+                   : `https://${PRODUCTION_API_URL}`,
     
     ENDPOINTS: {
         MESSAGES: '/api/messages',
@@ -21,6 +26,7 @@ const CONFIG = {
         ENQUIRIES: '/api/enquiries',
         ENROLLMENTS: '/api/enrollments',
         PAYMENTS: '/api/payments',
+        SCHOLARSHIPS: '/api/scholarships',
         STATS: '/api/stats',
         HEALTH: '/api/health'
     },

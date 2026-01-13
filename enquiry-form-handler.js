@@ -1,7 +1,7 @@
 /**
  * Enquiry Form Handler
  * Handles enquiry form submission using SendGrid via backend API
- * Sends emails to: enquiry@netlink.sl
+ * Sends emails to: enquiry@kns.sl
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -135,8 +135,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? CONFIG.ENDPOINTS.ENQUIRIES
                     : '/api/enquiries';
                 
+                // Check if we're trying to use same-origin API in production (which won't work on static hosting)
+                const isProduction = window.location.hostname !== 'localhost' && 
+                                    window.location.hostname !== '127.0.0.1' && 
+                                    window.location.hostname !== '';
+                const isSameOrigin = apiBaseUrl === window.location.origin;
+                
+                if (isProduction && isSameOrigin) {
+                    throw new Error('Backend API not configured. Please set PRODUCTION_API_URL in config.js to your deployed backend server URL.');
+                }
+                
                 // Send form data to backend API
-                const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+                const fullUrl = `${apiBaseUrl}${endpoint}`;
+                console.log('Submitting enquiry form to:', fullUrl); // Debug log
+                
+                const response = await fetch(fullUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -154,11 +167,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Check if response is ok before parsing JSON
                 if (!response.ok) {
+                    console.error('API response not OK:', response.status, response.statusText);
                     let errorText = 'Failed to submit enquiry';
                     try {
                         const errorData = await response.json();
+                        console.error('Error response data:', errorData);
                         errorText = errorData.error || errorText;
                     } catch (e) {
+                        const responseText = await response.text();
+                        console.error('Response text:', responseText);
                         errorText = `Server error: ${response.status} ${response.statusText}`;
                     }
                     throw new Error(errorText);
@@ -183,6 +200,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Error submitting enquiry form:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack
+                });
                 
                 // Handle different types of errors
                 const errorMessage = error.message || error.toString() || '';
@@ -194,8 +216,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     errorMessage.includes('NetworkError') ||
                     errorMessage.includes('network') ||
                     errorMessage.includes('ECONNREFUSED') ||
-                    errorMessage.includes('ERR_CONNECTION_REFUSED')) {
-                    showEnquiryMessage('error', 'Cannot connect to server. Please make sure the server is running. If you\'re testing locally, start the server with: npm start');
+                    errorMessage.includes('ERR_CONNECTION_REFUSED') ||
+                    errorMessage.includes('404')) {
+                    if (errorMessage.includes('Backend API not configured')) {
+                        showEnquiryMessage('error', errorMessage + ' For now, please contact us directly at admissions@kns.edu.sl or +232 79 422 442.');
+                    } else if (errorMessage.includes('404')) {
+                        showEnquiryMessage('error', 'Backend API endpoint not found (404). Please configure PRODUCTION_API_URL in config.js. For now, please contact us directly at admissions@kns.edu.sl or +232 79 422 442.');
+                    } else {
+                        showEnquiryMessage('error', 'Cannot connect to server. Please make sure the backend server is running and PRODUCTION_API_URL is set correctly in config.js. For now, please contact us directly at admissions@kns.edu.sl or +232 79 422 442.');
+                    }
                 } else if (errorMessage.includes('Server error')) {
                     showEnquiryMessage('error', errorMessage);
                 } else {
