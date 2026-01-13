@@ -739,12 +739,21 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // Initialize database and start server
+let server;
+
 initDatabase()
     .then(() => {
-        app.listen(PORT, () => {
-            console.log(`KNS College API server running on http://localhost:${PORT}`);
-            console.log(`API endpoints available at http://localhost:${PORT}/api`);
+        // Bind to 0.0.0.0 to accept connections from all interfaces (required for containers)
+        server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`KNS College API server running on http://0.0.0.0:${PORT}`);
+            console.log(`API endpoints available at http://0.0.0.0:${PORT}/api`);
             console.log(`Using Supabase: ${supabaseUrl}`);
+        });
+        
+        // Keep the process alive
+        server.on('error', (err) => {
+            console.error('Server error:', err);
+            process.exit(1);
         });
     })
     .catch((err) => {
@@ -752,9 +761,38 @@ initDatabase()
         process.exit(1);
     });
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-    console.log('\nShutting down server...');
-    process.exit(0);
+// Graceful shutdown handlers
+const gracefulShutdown = (signal) => {
+    console.log(`\nReceived ${signal}. Shutting down server gracefully...`);
+    
+    if (server) {
+        server.close(() => {
+            console.log('HTTP server closed.');
+            process.exit(0);
+        });
+        
+        // Force close after 10 seconds
+        setTimeout(() => {
+            console.error('Forced shutdown after timeout');
+            process.exit(1);
+        }, 10000);
+    } else {
+        process.exit(0);
+    }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+    gracefulShutdown('uncaughtException');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('unhandledRejection');
 });
 
