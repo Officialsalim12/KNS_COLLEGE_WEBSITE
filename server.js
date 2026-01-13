@@ -1022,6 +1022,49 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
+// Debug middleware to log ALL API requests (before static files)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+        console.log(`  Origin: ${req.headers.origin || 'none'}`);
+        console.log(`  Referer: ${req.headers.referer || 'none'}`);
+        console.log(`  User-Agent: ${req.headers['user-agent']?.substring(0, 50) || 'none'}...`);
+    }
+    next();
+});
+
+// Catch-all handler for unmatched API routes (for debugging)
+app.use('/api/*', (req, res) => {
+    console.error(`[${new Date().toISOString()}] UNMATCHED API ROUTE: ${req.method} ${req.path}`);
+    console.error(`  Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    console.error(`  Origin: ${req.headers.origin || 'none'}`);
+    res.status(404).json({ 
+        error: 'API route not found',
+        path: req.path,
+        method: req.method,
+        availableRoutes: [
+            'GET /api/health',
+            'GET /api/test',
+            'GET /api/scholarships',
+            'GET /api/scholarships/:id',
+            'GET /api/scholarships/test',
+            'GET /api/scholarships/diagnostics',
+            'POST /api/messages',
+            'GET /api/messages/:sessionId',
+            'POST /api/contacts',
+            'GET /api/contacts',
+            'POST /api/enquiries',
+            'GET /api/enquiries',
+            'POST /api/enrollments',
+            'GET /api/enrollments',
+            'POST /api/payments',
+            'PATCH /api/payments/:paymentId',
+            'GET /api/payments',
+            'GET /api/stats'
+        ]
+    });
+});
+
 // Serve static files (HTML, CSS, JS) from root directory
 // IMPORTANT: This must come AFTER all API routes to prevent conflicts
 app.use(express.static(__dirname));
@@ -1050,9 +1093,18 @@ initDatabase()
             if (middleware.route) {
                 const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
                 routes.push(`${methods} ${middleware.route.path}`);
+            } else if (middleware.name === 'router') {
+                // Handle router middleware (like express.Router())
+                if (middleware.regexp) {
+                    routes.push(`ROUTER ${middleware.regexp}`);
+                }
             }
         });
         routes.forEach(route => console.log(`  ${route}`));
+        
+        // Specifically check for scholarships route
+        const hasScholarshipsRoute = routes.some(r => r.includes('/api/scholarships'));
+        console.log(`\nScholarships route registered: ${hasScholarshipsRoute ? 'YES ✓' : 'NO ✗'}`);
         console.log('=============================\n');
         
         // Bind to 0.0.0.0 to accept connections from all interfaces (required for containers)
