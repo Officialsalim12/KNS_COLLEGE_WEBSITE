@@ -35,6 +35,11 @@ async function loadScholarships(scholarshipsGrid) {
         let apiBaseUrl;
         if (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) {
             apiBaseUrl = CONFIG.API_BASE_URL;
+            // Ensure it has a protocol
+            if (!apiBaseUrl.startsWith('http://') && !apiBaseUrl.startsWith('https://')) {
+                console.warn('API_BASE_URL missing protocol, adding https://');
+                apiBaseUrl = 'https://' + apiBaseUrl.replace(/^\/+/, '');
+            }
         } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '') {
             apiBaseUrl = 'http://localhost:3000';
         } else {
