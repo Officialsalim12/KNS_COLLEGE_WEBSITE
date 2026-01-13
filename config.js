@@ -4,10 +4,12 @@
  */
 
 const CONFIG = {
-    // API base URL - change this to your server URL
-    // For local development: 'http://localhost:3000'
-    // For production: 'https://your-domain.com'
-    API_BASE_URL: 'http://localhost:3000',
+    // Use production URL only if not on localhost, otherwise use localhost
+    API_BASE_URL: (window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' || 
+                   window.location.hostname === '') 
+                   ? 'http://localhost:3000' 
+                   : `https://${PRODUCTION_API_URL}`,
     
     // API endpoints
     ENDPOINTS: {
@@ -16,6 +18,7 @@ const CONFIG = {
         ENQUIRIES: '/api/enquiries',
         ENROLLMENTS: '/api/enrollments',
         PAYMENTS: '/api/payments',
+        SCHOLARSHIPS: '/api/scholarships',
         STATS: '/api/stats',
         HEALTH: '/api/health'
     },

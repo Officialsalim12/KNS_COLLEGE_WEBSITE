@@ -40,9 +40,28 @@ if (!sendgridApiKey) {
 }
 
 // Middleware
-app.use(cors());
+// CORS configuration - allows requests from any origin
+// For production, you may want to restrict this to specific domains
+const corsOptions = {
+    origin: process.env.CORS_ORIGIN || '*', // Set CORS_ORIGIN env var to restrict origins (e.g., 'https://kns.edu.sl')
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/scholarships', express.static('scholarships', {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.pdf')) {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment');
+        } else if (path.endsWith('.doc') || path.endsWith('.docx')) {
+            res.setHeader('Content-Type', 'application/msword');
+            res.setHeader('Content-Disposition', 'attachment');
+        }
+    }
+}));
 
 // Initialize database connection
 async function initDatabase() {
@@ -145,7 +164,7 @@ app.get('/api/messages/:sessionId', async (req, res) => {
 
 // Save contact form submission
 app.post('/api/contacts', async (req, res) => {
-    const { name, email, phone, subject, message, newsletter } = req.body;
+    const { name, email, phone, subject, message } = req.body;
     
     if (!name || !email || !subject || !message) {
         return res.status(400).json({ 
@@ -155,8 +174,8 @@ app.post('/api/contacts', async (req, res) => {
     
     const ipAddress = getClientIp(req);
     const userAgent = getUserAgent(req);
-    const newsletterValue = newsletter === true || newsletter === 'yes' || newsletter === 1 || newsletter === 'true';
     
+    // Insert only fields that exist in the database schema
     const { data, error } = await supabase
         .from('contacts')
         .insert([
@@ -165,10 +184,7 @@ app.post('/api/contacts', async (req, res) => {
                 email: email,
                 phone: phone || null,
                 subject: subject,
-                message: message,
-                newsletter: newsletterValue,
-                ip_address: ipAddress,
-                user_agent: userAgent
+                message: message
             }
         ])
         .select()
@@ -198,7 +214,6 @@ Subject: ${subject}
 Message:
 ${message}
 
-Newsletter Opt-in: ${newsletterValue ? 'Yes' : 'No'}
 IP Address: ${ipAddress}
 User Agent: ${userAgent}
 Submitted At: ${new Date().toISOString()}
@@ -214,7 +229,6 @@ Submitted At: ${new Date().toISOString()}
                 .split('\n')
                 .map((line) => line.trim())
                 .join('<br>')}</p>
-            <p><strong>Newsletter Opt-in:</strong> ${newsletterValue ? 'Yes' : 'No'}</p>
             <hr>
             <p><strong>IP Address:</strong> ${ipAddress}</p>
             <p><strong>User Agent:</strong> ${userAgent}</p>
@@ -222,7 +236,7 @@ Submitted At: ${new Date().toISOString()}
         `;
 
         const msg = {
-            to: 'admission@kns.edu.sl',
+            to: 'admissions@kns.edu.sl',
             from: sendgridFromEmail,
             subject: subjectLine,
             text: textBody,
@@ -592,6 +606,56 @@ app.get('/api/payments', async (req, res) => {
     }
     
     res.json({ success: true, payments: data || [] });
+});
+
+app.get('/api/scholarships', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('scholarships')
+            .select('*')
+            .eq('is_active', true)
+            .order('deadline', { ascending: true });
+        
+        if (error) {
+            console.error('Error fetching scholarships:', error);
+            return res.status(500).json({ error: 'Failed to fetch scholarships' });
+        }
+        
+        res.json({ success: true, scholarships: data || [] });
+    } catch (error) {
+        console.error('Error fetching scholarships:', error);
+        res.status(500).json({ error: 'Failed to fetch scholarships' });
+    }
+});
+
+app.get('/api/scholarships/:id', async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        const { data, error } = await supabase
+            .from('scholarships')
+            .select('*')
+            .eq('id', id)
+            .eq('is_active', true)
+            .single();
+        
+        if (error) {
+            console.error('Error fetching scholarship:', error);
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({ error: 'Scholarship not found' });
+            }
+            return res.status(500).json({ error: 'Failed to fetch scholarship' });
+        }
+        
+        if (!data) {
+            return res.status(404).json({ error: 'Scholarship not found' });
+        }
+        
+        res.json({ success: true, scholarship: data });
+    } catch (error) {
+        console.error('Error fetching scholarship:', error);
+        res.status(500).json({ error: 'Failed to fetch scholarship' });
+    }
 });
 
 // Get statistics (for admin dashboard)
