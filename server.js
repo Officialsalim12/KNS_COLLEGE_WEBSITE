@@ -73,21 +73,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (HTML, CSS, JS) from root directory
-app.use(express.static(__dirname));
-
-app.use('/scholarships', express.static('scholarships', {
-    setHeaders: (res, path) => {
-        if (path.endsWith('.pdf')) {
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment');
-        } else if (path.endsWith('.doc') || path.endsWith('.docx')) {
-            res.setHeader('Content-Type', 'application/msword');
-            res.setHeader('Content-Disposition', 'attachment');
-        }
-    }
-}));
-
 // Initialize database connection
 async function initDatabase() {
     try {
@@ -851,6 +836,22 @@ app.get('/api/stats', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch statistics' });
     }
 });
+
+// Serve static files (HTML, CSS, JS) from root directory
+// IMPORTANT: This must come AFTER all API routes to prevent conflicts
+app.use(express.static(__dirname));
+
+app.use('/scholarships', express.static('scholarships', {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.pdf')) {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment');
+        } else if (path.endsWith('.doc') || path.endsWith('.docx')) {
+            res.setHeader('Content-Type', 'application/msword');
+            res.setHeader('Content-Disposition', 'attachment');
+        }
+    }
+}));
 
 // Initialize database and start server
 let server;
