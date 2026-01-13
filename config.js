@@ -75,7 +75,15 @@ function getApiBaseUrl() {
         return currentOrigin;
     }
     
-    // Frontend is on Sector Link (or other domain) - use Render backend
+    // Frontend is on www.kns.edu.sl or other domain - use Render backend
+    // Explicitly check for the production frontend domain
+    if (currentOrigin.includes('kns.edu.sl') || currentOrigin.includes('www.kns.edu.sl')) {
+        const renderBackendUrl = 'https://kns-college-website.onrender.com';
+        console.log('Frontend on kns.edu.sl domain, using Render backend:', renderBackendUrl);
+        return renderBackendUrl;
+    }
+    
+    // Fallback: Frontend is on other domain - use Render backend
     const renderBackendUrl = 'https://kns-college-website.onrender.com';
     console.log('Frontend on different domain, using Render backend:', renderBackendUrl);
     return renderBackendUrl;
