@@ -3,10 +3,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!scholarshipsGrid) return;
     
     try {
-        const response = await fetch(`${getApiBaseUrl()}/api/scholarships`);
-        const result = await response.json();
+        // Get API base URL from config
+        const apiBaseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
+            ? CONFIG.API_BASE_URL 
+            : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '')
+                ? 'http://localhost:3000'
+                : window.location.origin;
         
-        if (!result.success || !result.scholarships || result.scholarships.length === 0) {
+        const endpoint = (typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS && CONFIG.ENDPOINTS.SCHOLARSHIPS)
+            ? CONFIG.ENDPOINTS.SCHOLARSHIPS
+            : '/api/scholarships';
+        
+        const fullUrl = `${apiBaseUrl}${endpoint}`;
+        console.log('Fetching scholarships from:', fullUrl); // Debug log
+        
+        const response = await fetch(fullUrl);
+        
+        // Check if response is ok before parsing JSON
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API response error:', response.status, response.statusText, errorText);
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Scholarships API response:', result); // Debug log
+        
+        if (!result.success) {
+            console.error('API returned success: false', result);
+            throw new Error(result.error || 'Failed to fetch scholarships');
+        }
+        
+        if (!result.scholarships || result.scholarships.length === 0) {
             scholarshipsGrid.innerHTML = `
                 <div class="no-scholarships-message">
                     <p>No scholarships are currently available. Please check back later.</p>
@@ -21,9 +49,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     } catch (error) {
         console.error('Error loading scholarships:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         scholarshipsGrid.innerHTML = `
             <div class="error-message">
                 <p>Unable to load scholarships. Please try again later.</p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Error: ${escapeHtml(error.message)}</p>
             </div>
         `;
     }
@@ -70,21 +104,3 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function getApiBaseUrl() {
-    const isLocalhost = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname === '';
-    
-    if (isLocalhost) {
-        return 'http://localhost:3000';
-    }
-    
-    if (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) {
-        if (CONFIG.API_BASE_URL.startsWith('http://') || CONFIG.API_BASE_URL.startsWith('https://')) {
-            return CONFIG.API_BASE_URL;
-        }
-        return `https://${CONFIG.API_BASE_URL}`;
-    }
-    
-    return window.location.origin;
-}
