@@ -63,11 +63,27 @@ if (!sendgridApiKey) {
 
 // Middleware
 // CORS configuration - allows requests from Sector Link frontend and other origins
-// Frontend is hosted on Sector Link, backend is on Render
+// Frontend is hosted on www.kns.edu.sl, backend is on Render
 const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
+        if (!origin) {
+            console.log('CORS: Allowing request with no origin');
+            return callback(null, true);
+        }
+        
+        // Explicitly allow www.kns.edu.sl and kns.edu.sl
+        const allowedDomains = [
+            'https://www.kns.edu.sl',
+            'https://kns.edu.sl',
+            'http://www.kns.edu.sl',
+            'http://kns.edu.sl'
+        ];
+        
+        if (allowedDomains.includes(origin) || origin.includes('kns.edu.sl')) {
+            console.log(`CORS: Allowing request from KNS domain: ${origin}`);
+            return callback(null, true);
+        }
         
         // Get allowed origins from environment variable or use default
         const allowedOrigins = process.env.CORS_ORIGIN 
@@ -76,15 +92,17 @@ const corsOptions = {
         
         // If '*' is in allowed origins, allow all
         if (allowedOrigins.includes('*')) {
+            console.log(`CORS: Allowing request from origin (wildcard): ${origin}`);
             return callback(null, true);
         }
         
         // Check if origin is in allowed list
         if (allowedOrigins.includes(origin)) {
+            console.log(`CORS: Allowing request from origin (in list): ${origin}`);
             callback(null, true);
         } else {
+            console.log(`CORS: Allowing request from origin (fallback): ${origin}`);
             callback(null, true); // Still allow, but log for debugging
-            console.log(`CORS: Allowing request from origin: ${origin}`);
         }
     },
     credentials: true,
@@ -97,13 +115,32 @@ app.use(cors(corsOptions));
 // Add CORS headers manually as fallback (for maximum compatibility)
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    // Allow all origins for now (can be restricted via CORS_ORIGIN env var)
-    res.header('Access-Control-Allow-Origin', origin || '*');
+    
+    // Explicitly allow www.kns.edu.sl and kns.edu.sl
+    const allowedOrigins = [
+        'https://www.kns.edu.sl',
+        'https://kns.edu.sl',
+        'http://www.kns.edu.sl',
+        'http://kns.edu.sl'
+    ];
+    
+    // If origin matches allowed domains, use it; otherwise use origin or wildcard
+    if (origin && (allowedOrigins.includes(origin) || origin.includes('kns.edu.sl'))) {
+        res.header('Access-Control-Allow-Origin', origin);
+        console.log(`[CORS Header] Set Access-Control-Allow-Origin to: ${origin}`);
+    } else if (origin) {
+        res.header('Access-Control-Allow-Origin', origin);
+    } else {
+        res.header('Access-Control-Allow-Origin', '*');
+    }
+    
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    
     if (req.method === 'OPTIONS') {
+        console.log(`[CORS] Handling OPTIONS preflight request from origin: ${origin || 'none'}`);
         return res.sendStatus(200);
     }
     next();
