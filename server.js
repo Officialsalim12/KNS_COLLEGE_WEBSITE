@@ -51,6 +51,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files (HTML, CSS, JS) from root directory
+app.use(express.static(__dirname));
+
 app.use('/scholarships', express.static('scholarships', {
     setHeaders: (res, path) => {
         if (path.endsWith('.pdf')) {
