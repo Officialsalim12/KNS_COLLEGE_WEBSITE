@@ -981,6 +981,212 @@ app.get('/api/scholarships/:id', async (req, res) => {
     }
 });
 
+// Download scholarship files endpoint
+app.get('/api/scholarships/:id/download/:type', async (req, res) => {
+    const { id, type } = req.params;
+    
+    // Validate type
+    if (type !== 'guide' && type !== 'form') {
+        return res.status(400).json({ error: 'Invalid download type. Use "guide" or "form".' });
+    }
+    
+    try {
+        console.log(`[Download Request] Scholarship ID: ${id}, Type: ${type}`);
+        
+        const { data, error } = await supabase
+            .from('scholarships')
+            .select('*')
+            .eq('id', id)
+            .eq('is_active', true)
+            .single();
+        
+        if (error) {
+            console.error(`[Download Error] Database error:`, error);
+            return res.status(404).json({ error: 'Scholarship not found', details: error.message });
+        }
+        
+        if (!data) {
+            console.error(`[Download Error] Scholarship not found: ${id}`);
+            return res.status(404).json({ error: 'Scholarship not found' });
+        }
+        
+        const filePath = type === 'guide' ? data.guide_path : data.form_path;
+        
+        console.log(`[Download] File path from database: ${filePath}`);
+        
+        if (!filePath || filePath === '#' || filePath.trim() === '') {
+            console.error(`[Download Error] No file path for ${type}`);
+            return res.status(404).json({ 
+                error: `${type === 'guide' ? 'Guide' : 'Form'} file not available for this scholarship.`,
+                message: 'The file path is not set in the database.'
+            });
+        }
+        
+        const trimmedPath = filePath.trim();
+        
+        // If it's a full URL, proxy the file or redirect
+        if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
+            console.log(`[Download] External URL detected: ${trimmedPath}`);
+            
+            // For external URLs, we can either redirect or proxy
+            // Redirect is simpler but may have CORS issues
+            // Let's proxy it to avoid CORS issues
+            try {
+                const https = require('https');
+                const http = require('http');
+                const url = require('url');
+                
+                const fileUrl = new URL(trimmedPath);
+                const protocol = fileUrl.protocol === 'https:' ? https : http;
+                
+                protocol.get(trimmedPath, (fileResponse) => {
+                    if (fileResponse.statusCode !== 200) {
+                        console.error(`[Download Error] Failed to fetch external file: ${fileResponse.statusCode}`);
+                        return res.status(fileResponse.statusCode).json({ 
+                            error: 'Failed to fetch file from external source',
+                            statusCode: fileResponse.statusCode
+                        });
+                    }
+                    
+                    // Determine content type from response or file extension
+                    const contentType = fileResponse.headers['content-type'] || 
+                                      (trimmedPath.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+                    
+                    res.setHeader('Content-Type', contentType);
+                    res.setHeader('Content-Disposition', `attachment; filename="${trimmedPath.split('/').pop()}"`);
+                    res.setHeader('Access-Control-Allow-Origin', '*');
+                    
+                    fileResponse.pipe(res);
+                }).on('error', (err) => {
+                    console.error(`[Download Error] Error fetching external file:`, err);
+                    res.status(500).json({ error: 'Failed to fetch file from external source', details: err.message });
+                });
+            } catch (proxyError) {
+                console.error(`[Download Error] Proxy error:`, proxyError);
+                // Fallback to redirect
+                return res.redirect(trimmedPath);
+            }
+            return; // Don't continue to file serving
+        }
+        
+        // Otherwise, try to serve from the scholarships directory
+        const path = require('path');
+        const fs = require('fs');
+        
+        // Clean the path
+        let cleanPath = trimmedPath.replace(/^\/+/, '').replace(/^scholarships\//, '');
+        const fullPath = path.join(__dirname, 'scholarships', cleanPath);
+        
+        console.log(`[Download] Attempting to serve file from: ${fullPath}`);
+        
+        // Check if file exists
+        if (!fs.existsSync(fullPath)) {
+            console.error(`[Download Error] File not found: ${fullPath}`);
+            console.error(`[Download Error] Current directory: ${__dirname}`);
+            console.error(`[Download Error] Scholarships directory exists: ${fs.existsSync(path.join(__dirname, 'scholarships'))}`);
+            
+            return res.status(404).json({ 
+                error: 'File not found',
+                path: fullPath,
+                message: 'The requested file does not exist on the server.',
+                suggestion: 'Please ensure the file exists in the scholarships directory or update the file path in the database.'
+            });
+        }
+        
+        // Determine content type
+        const ext = path.extname(fullPath).toLowerCase();
+        let contentType = 'application/octet-stream';
+        if (ext === '.pdf') {
+            contentType = 'application/pdf';
+        } else if (ext === '.doc') {
+            contentType = 'application/msword';
+        } else if (ext === '.docx') {
+            contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        }
+        
+        // Set headers and send file
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${path.basename(fullPath)}"`);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        
+        console.log(`[Download] Sending file: ${fullPath}`);
+        res.sendFile(fullPath, (err) => {
+            if (err) {
+                console.error(`[Download Error] Error sending file:`, err);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Failed to send file', details: err.message });
+                }
+            } else {
+                console.log(`[Download] File sent successfully: ${fullPath}`);
+            }
+        });
+        
+    } catch (error) {
+        console.error('[Download Error] Unexpected error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to serve file', details: error.message });
+        }
+    }
+});
+
+// Test endpoint to check file availability
+app.get('/api/scholarships/:id/files/check', async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        const { data, error } = await supabase
+            .from('scholarships')
+            .select('*')
+            .eq('id', id)
+            .eq('is_active', true)
+            .single();
+        
+        if (error || !data) {
+            return res.status(404).json({ error: 'Scholarship not found' });
+        }
+        
+        const path = require('path');
+        const fs = require('fs');
+        
+        const results = {
+            scholarship_id: id,
+            scholarship_title: data.title,
+            guide_path: data.guide_path,
+            form_path: data.form_path,
+            guide_exists: false,
+            form_exists: false,
+            guide_full_path: null,
+            form_full_path: null,
+            scholarships_dir_exists: fs.existsSync(path.join(__dirname, 'scholarships'))
+        };
+        
+        // Check guide file
+        if (data.guide_path && data.guide_path.trim() && !data.guide_path.startsWith('http')) {
+            const cleanPath = data.guide_path.replace(/^\/+/, '').replace(/^scholarships\//, '');
+            const fullPath = path.join(__dirname, 'scholarships', cleanPath);
+            results.guide_full_path = fullPath;
+            results.guide_exists = fs.existsSync(fullPath);
+        } else if (data.guide_path && (data.guide_path.startsWith('http://') || data.guide_path.startsWith('https://'))) {
+            results.guide_exists = 'external_url';
+        }
+        
+        // Check form file
+        if (data.form_path && data.form_path.trim() && !data.form_path.startsWith('http')) {
+            const cleanPath = data.form_path.replace(/^\/+/, '').replace(/^scholarships\//, '');
+            const fullPath = path.join(__dirname, 'scholarships', cleanPath);
+            results.form_full_path = fullPath;
+            results.form_exists = fs.existsSync(fullPath);
+        } else if (data.form_path && (data.form_path.startsWith('http://') || data.form_path.startsWith('https://'))) {
+            results.form_exists = 'external_url';
+        }
+        
+        res.json({ success: true, ...results });
+    } catch (error) {
+        console.error('Error checking files:', error);
+        res.status(500).json({ error: 'Failed to check files', details: error.message });
+    }
+});
+
 // Get statistics (for admin dashboard)
 app.get('/api/stats', async (req, res) => {
     try {
@@ -1047,6 +1253,7 @@ app.use('/api/*', (req, res) => {
             'GET /api/test',
             'GET /api/scholarships',
             'GET /api/scholarships/:id',
+            'GET /api/scholarships/:id/download/:type',
             'GET /api/scholarships/test',
             'GET /api/scholarships/diagnostics',
             'POST /api/messages',
