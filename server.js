@@ -73,6 +73,14 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware (for debugging)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    }
+    next();
+});
+
 // Initialize database connection
 async function initDatabase() {
     try {
@@ -858,6 +866,18 @@ let server;
 
 initDatabase()
     .then(() => {
+        // Log registered API routes for debugging
+        console.log('\n=== Registered API Routes ===');
+        const routes = [];
+        app._router.stack.forEach((middleware) => {
+            if (middleware.route) {
+                const methods = Object.keys(middleware.route.methods).join(', ').toUpperCase();
+                routes.push(`${methods} ${middleware.route.path}`);
+            }
+        });
+        routes.forEach(route => console.log(`  ${route}`));
+        console.log('=============================\n');
+        
         // Bind to 0.0.0.0 to accept connections from all interfaces (required for containers)
         server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`KNS College API server running on http://0.0.0.0:${PORT}`);
