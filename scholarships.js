@@ -1,29 +1,81 @@
+// Wait for config to load if it hasn't already
+function waitForConfig(callback, maxAttempts = 10) {
+    let attempts = 0;
+    const checkConfig = () => {
+        attempts++;
+        if (typeof CONFIG !== 'undefined' || attempts >= maxAttempts) {
+            callback();
+        } else {
+            setTimeout(checkConfig, 100);
+        }
+    };
+    checkConfig();
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     const scholarshipsGrid = document.getElementById('scholarshipsGrid');
-    if (!scholarshipsGrid) return;
+    if (!scholarshipsGrid) {
+        console.error('Scholarships grid element not found');
+        return;
+    }
+    
+    // Wait for CONFIG to be available (config.js should load first, but just in case)
+    waitForConfig(async () => {
+        await loadScholarships(scholarshipsGrid);
+    });
+});
+
+async function loadScholarships(scholarshipsGrid) {
     
     try {
         // Get API base URL from config
-        const apiBaseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
-            ? CONFIG.API_BASE_URL 
-            : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '')
-                ? 'http://localhost:3000'
-                : window.location.origin;
+        // CONFIG should be loaded before this script (config.js must be included first)
+        let apiBaseUrl;
+        if (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) {
+            apiBaseUrl = CONFIG.API_BASE_URL;
+        } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '') {
+            apiBaseUrl = 'http://localhost:3000';
+        } else {
+            // Fallback: Use Render backend if CONFIG is not available
+            apiBaseUrl = 'https://kns-college-website.onrender.com';
+            console.warn('CONFIG not found, using fallback Render backend URL');
+        }
         
         const endpoint = (typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS && CONFIG.ENDPOINTS.SCHOLARSHIPS)
             ? CONFIG.ENDPOINTS.SCHOLARSHIPS
             : '/api/scholarships';
         
         const fullUrl = `${apiBaseUrl}${endpoint}`;
-        console.log('Fetching scholarships from:', fullUrl); // Debug log
+        console.log('=== Scholarships Fetch Debug ===');
+        console.log('Fetching scholarships from:', fullUrl);
+        console.log('Current origin:', window.location.origin);
+        console.log('CONFIG available:', typeof CONFIG !== 'undefined');
+        console.log('CONFIG.API_BASE_URL:', typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'N/A');
+        console.log('===============================');
         
-        const response = await fetch(fullUrl);
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            // Add credentials for CORS if needed
+            credentials: 'omit'
+        });
         
         // Check if response is ok before parsing JSON
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API response error:', response.status, response.statusText, errorText);
-            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            let errorText;
+            try {
+                errorText = await response.text();
+                const errorJson = JSON.parse(errorText);
+                console.error('API response error:', response.status, response.statusText, errorJson);
+                throw new Error(errorJson.error || errorJson.details || `API request failed: ${response.status} ${response.statusText}`);
+            } catch (parseError) {
+                errorText = await response.text().catch(() => 'Unknown error');
+                console.error('API response error (non-JSON):', response.status, response.statusText, errorText);
+                throw new Error(`API request failed: ${response.status} ${response.statusText}. ${errorText}`);
+            }
         }
         
         const result = await response.json();
@@ -31,7 +83,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (!result.success) {
             console.error('API returned success: false', result);
-            throw new Error(result.error || 'Failed to fetch scholarships');
+            const errorMsg = result.error || result.details || 'Failed to fetch scholarships';
+            throw new Error(errorMsg);
         }
         
         if (!result.scholarships || result.scholarships.length === 0) {
@@ -54,14 +107,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             stack: error.stack,
             name: error.name
         });
+        
+        // Provide more helpful error messages
+        let errorMessage = 'Unable to load scholarships. Please try again later.';
+        let errorDetails = error.message;
+        
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('CORS')) {
+            errorMessage = 'Unable to connect to the server. Please check your internet connection or try again later.';
+            errorDetails = 'Network error: ' + error.message;
+        } else if (error.message.includes('404')) {
+            errorMessage = 'API endpoint not found. Please contact support.';
+            errorDetails = 'The scholarships API endpoint could not be found.';
+        } else if (error.message.includes('500')) {
+            errorMessage = 'Server error occurred. Please try again later.';
+            errorDetails = 'Server error: ' + error.message;
+        }
+        
         scholarshipsGrid.innerHTML = `
             <div class="error-message">
-                <p>Unable to load scholarships. Please try again later.</p>
-                <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Error: ${escapeHtml(error.message)}</p>
+                <p>${escapeHtml(errorMessage)}</p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 0.5em;">Error: ${escapeHtml(errorDetails)}</p>
+                <p style="font-size: 0.8em; color: #999; margin-top: 0.5em;">If this problem persists, please contact us at admissions@kns.edu.sl</p>
+                <p style="font-size: 0.8em; color: #999; margin-top: 0.5em;">Debug: Check browser console (F12) for more details.</p>
             </div>
         `;
     }
-});
+}
 
 function createScholarshipCard(scholarship) {
     const card = document.createElement('div');

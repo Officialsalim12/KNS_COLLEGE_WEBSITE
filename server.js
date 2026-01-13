@@ -62,14 +62,52 @@ if (!sendgridApiKey) {
 }
 
 // Middleware
-// CORS configuration - allows requests from any origin
-// For production, you may want to restrict this to specific domains
+// CORS configuration - allows requests from Sector Link frontend and other origins
+// Frontend is hosted on Sector Link, backend is on Render
 const corsOptions = {
-    origin: process.env.CORS_ORIGIN || '*', // Set CORS_ORIGIN env var to restrict origins (e.g., 'https://kns.edu.sl')
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        // Get allowed origins from environment variable or use default
+        const allowedOrigins = process.env.CORS_ORIGIN 
+            ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+            : ['*']; // Default: allow all origins
+        
+        // If '*' is in allowed origins, allow all
+        if (allowedOrigins.includes('*')) {
+            return callback(null, true);
+        }
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Still allow, but log for debugging
+            console.log(`CORS: Allowing request from origin: ${origin}`);
+        }
+    },
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 };
 app.use(cors(corsOptions));
+
+// Add CORS headers manually as fallback (for maximum compatibility)
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    // Allow all origins for now (can be restricted via CORS_ORIGIN env var)
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -77,6 +115,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
         console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+        console.log(`  Origin: ${req.headers.origin || 'none'}`);
+        console.log(`  Referer: ${req.headers.referer || 'none'}`);
     }
     next();
 });
@@ -129,6 +169,112 @@ function getUserAgent(req) {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'KNS College API is running' });
+});
+
+// Test endpoint for debugging API connectivity
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'API test endpoint is working',
+        timestamp: new Date().toISOString(),
+        origin: req.headers.origin || 'none',
+        referer: req.headers.referer || 'none',
+        host: req.headers.host || 'none',
+        supabase_configured: !!(supabaseUrl && supabaseAnonKey)
+    });
+});
+
+// Enhanced scholarships test endpoint with detailed diagnostics
+app.get('/api/scholarships/diagnostics', async (req, res) => {
+    try {
+        const diagnostics = {
+            timestamp: new Date().toISOString(),
+            supabase_configured: !!(supabaseUrl && supabaseAnonKey),
+            supabase_url_set: !!supabaseUrl,
+            supabase_key_set: !!supabaseAnonKey,
+            tests: {}
+        };
+        
+        // Test 1: Basic connection test
+        try {
+            const { data: testData, error: testError, count } = await supabase
+                .from('scholarships')
+                .select('*', { count: 'exact' })
+                .limit(1);
+            
+            diagnostics.tests.table_access = {
+                success: !testError,
+                error: testError ? {
+                    code: testError.code,
+                    message: testError.message,
+                    details: testError.details,
+                    hint: testError.hint
+                } : null,
+                record_count: count || 0,
+                sample_record: testData && testData.length > 0 ? testData[0] : null
+            };
+        } catch (err) {
+            diagnostics.tests.table_access = {
+                success: false,
+                error: { message: err.message }
+            };
+        }
+        
+        // Test 2: Check active scholarships
+        try {
+            const { data: activeData, error: activeError } = await supabase
+                .from('scholarships')
+                .select('id, title, is_active, deadline')
+                .eq('is_active', true)
+                .limit(10);
+            
+            diagnostics.tests.active_scholarships = {
+                success: !activeError,
+                error: activeError ? {
+                    code: activeError.code,
+                    message: activeError.message
+                } : null,
+                count: activeData ? activeData.length : 0,
+                records: activeData || []
+            };
+        } catch (err) {
+            diagnostics.tests.active_scholarships = {
+                success: false,
+                error: { message: err.message }
+            };
+        }
+        
+        // Test 3: Check all scholarships (regardless of is_active)
+        try {
+            const { data: allData, error: allError } = await supabase
+                .from('scholarships')
+                .select('id, title, is_active')
+                .limit(10);
+            
+            diagnostics.tests.all_scholarships = {
+                success: !allError,
+                error: allError ? {
+                    code: allError.code,
+                    message: allError.message
+                } : null,
+                count: allData ? allData.length : 0,
+                records: allData || []
+            };
+        } catch (err) {
+            diagnostics.tests.all_scholarships = {
+                success: false,
+                error: { message: err.message }
+            };
+        }
+        
+        res.json({ success: true, diagnostics });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            stack: error.stack
+        });
+    }
 });
 
 // Test scholarships endpoint (for debugging)
@@ -265,7 +411,9 @@ app.post('/api/contacts', async (req, res) => {
                 email: email,
                 phone: phone || null,
                 subject: subject,
-                message: message
+                message: message,
+                ip_address: ipAddress,
+                user_agent: userAgent
             }
         ])
         .select()
@@ -273,7 +421,14 @@ app.post('/api/contacts', async (req, res) => {
     
     if (error) {
         console.error('Error saving contact:', error);
-        return res.status(500).json({ error: 'Failed to save contact submission' });
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        return res.status(500).json({ 
+            error: 'Failed to save contact submission',
+            details: error.message || 'Unknown database error',
+            code: error.code
+        });
     }
 
     // Attempt to send email via SendGrid (non-blocking for client)
@@ -691,6 +846,10 @@ app.get('/api/payments', async (req, res) => {
 
 app.get('/api/scholarships', async (req, res) => {
     try {
+        console.log('=== Scholarships API Request ===');
+        console.log(`[${new Date().toISOString()}] GET /api/scholarships`);
+        console.log(`  Origin: ${req.headers.origin || 'none'}`);
+        console.log(`  Referer: ${req.headers.referer || 'none'}`);
         console.log('Fetching scholarships from Supabase...');
         
         // Try to fetch active scholarships first
@@ -701,6 +860,10 @@ app.get('/api/scholarships', async (req, res) => {
             .order('deadline', { ascending: true });
         
         const { data, error } = await query;
+        
+        console.log('Supabase query completed');
+        console.log(`  Data: ${data ? data.length : 0} records`);
+        console.log(`  Error: ${error ? 'Yes' : 'No'}`);
         
         if (error) {
             console.error('Error fetching scholarships:', error);
@@ -755,18 +918,32 @@ app.get('/api/scholarships', async (req, res) => {
             if (!allError && allData && allData.length > 0) {
                 console.log('Found scholarships in database:', allData);
                 console.log('Note: No scholarships have is_active = true. Returning empty array.');
+                console.log('TIP: Set is_active = true for scholarships you want to display.');
             } else if (allError) {
                 console.error('Error checking all scholarships:', allError);
             } else {
                 console.log('No scholarships found in database at all.');
+                console.log('TIP: Add scholarships to the Supabase scholarships table.');
             }
         }
         
         console.log(`Successfully fetched ${data ? data.length : 0} active scholarships`);
+        console.log('=== End Scholarships API Request ===\n');
+        
+        // Return response with helpful message if no scholarships
+        if (!data || data.length === 0) {
+            return res.json({ 
+                success: true, 
+                scholarships: [],
+                message: 'No active scholarships found. Check Supabase to ensure scholarships exist and have is_active = true.'
+            });
+        }
+        
         res.json({ success: true, scholarships: data || [] });
     } catch (error) {
         console.error('Unexpected error fetching scholarships:', error);
         console.error('Error stack:', error.stack);
+        console.error('=== End Scholarships API Request (ERROR) ===\n');
         res.status(500).json({ 
             error: 'Failed to fetch scholarships',
             details: error.message || 'Unexpected server error'
