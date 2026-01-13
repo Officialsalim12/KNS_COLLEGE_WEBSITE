@@ -6,6 +6,30 @@
  * - Production on Sector Link: Uses https://kns-college-website.onrender.com (backend on Render)
  * - Custom: Can be overridden by setting window.RENDER_API_URL or localStorage API_BASE_URL
  */
+/**
+ * Normalize API URL to ensure it has a protocol
+ * @param {string} url - The URL to normalize
+ * @returns {string} - URL with protocol (https:// or http://)
+ */
+function normalizeApiUrl(url) {
+    if (!url || typeof url !== 'string') {
+        return null;
+    }
+    
+    // Remove whitespace
+    url = url.trim();
+    
+    // If URL already has protocol, return as-is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+    }
+    
+    // If URL doesn't have protocol, add https://
+    // Remove leading slashes if present
+    url = url.replace(/^\/+/, '');
+    return 'https://' + url;
+}
+
 function getApiBaseUrl() {
     const isLocalhost = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
@@ -20,16 +44,25 @@ function getApiBaseUrl() {
     // You can set this in your HTML: <script>window.RENDER_API_URL = 'https://your-backend.onrender.com';</script>
     // Or set it in localStorage: localStorage.setItem('API_BASE_URL', 'https://your-backend.onrender.com')
     if (typeof window !== 'undefined' && window.RENDER_API_URL) {
-        console.log('Using window.RENDER_API_URL:', window.RENDER_API_URL);
-        return window.RENDER_API_URL;
+        const normalized = normalizeApiUrl(window.RENDER_API_URL);
+        console.log('Using window.RENDER_API_URL:', window.RENDER_API_URL, '-> normalized:', normalized);
+        return normalized || 'https://kns-college-website.onrender.com';
     }
     
     // Check localStorage for custom API URL (useful for production debugging)
+    // NOTE: Clear localStorage if it has an old/incorrect URL
     try {
         const storedApiUrl = localStorage.getItem('API_BASE_URL');
         if (storedApiUrl) {
-            console.log('Using localStorage API_BASE_URL:', storedApiUrl);
-            return storedApiUrl;
+            const normalized = normalizeApiUrl(storedApiUrl);
+            // If the stored URL is not the correct Render URL, clear it and use default
+            if (normalized && !normalized.includes('kns-college-website.onrender.com')) {
+                console.warn('Stored API_BASE_URL is not the Render backend. Clearing and using default.');
+                localStorage.removeItem('API_BASE_URL');
+            } else if (normalized) {
+                console.log('Using localStorage API_BASE_URL:', storedApiUrl, '-> normalized:', normalized);
+                return normalized;
+            }
         }
     } catch (e) {
         // localStorage might not be available
@@ -49,7 +82,13 @@ function getApiBaseUrl() {
 }
 
 // Calculate API base URL
-const calculatedApiBaseUrl = getApiBaseUrl();
+let calculatedApiBaseUrl = getApiBaseUrl();
+
+// Validate and fix the calculated URL
+if (!calculatedApiBaseUrl.startsWith('http://') && !calculatedApiBaseUrl.startsWith('https://')) {
+    console.warn('Calculated API URL missing protocol, fixing...');
+    calculatedApiBaseUrl = normalizeApiUrl(calculatedApiBaseUrl) || 'https://kns-college-website.onrender.com';
+}
 
 // Log configuration for debugging
 console.log('=== CONFIG.JS Loaded ===');
@@ -57,6 +96,19 @@ console.log('Current hostname:', window.location.hostname);
 console.log('Current origin:', window.location.origin);
 console.log('Calculated API Base URL:', calculatedApiBaseUrl);
 console.log('========================');
+
+// Utility function to reset API URL (can be called from browser console)
+if (typeof window !== 'undefined') {
+    window.resetApiUrl = function() {
+        try {
+            localStorage.removeItem('API_BASE_URL');
+            console.log('API_BASE_URL cleared from localStorage. Reload the page to use default.');
+        } catch (e) {
+            console.error('Could not clear localStorage:', e);
+        }
+    };
+    console.log('Utility function available: window.resetApiUrl() - Call this to clear incorrect API URL from localStorage');
+}
 
 const CONFIG = {
     /**
