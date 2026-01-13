@@ -138,6 +138,55 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'KNS College API is running' });
 });
 
+// Test scholarships endpoint (for debugging)
+app.get('/api/scholarships/test', async (req, res) => {
+    try {
+        console.log('Testing scholarships connection...');
+        
+        // Test 1: Check if we can query the table at all
+        const { data: testData, error: testError, count } = await supabase
+            .from('scholarships')
+            .select('*', { count: 'exact' })
+            .limit(1);
+        
+        const result = {
+            timestamp: new Date().toISOString(),
+            supabase_connected: !testError,
+            table_exists: !testError || (testError && testError.code !== 'PGRST116' && testError.code !== '42P01'),
+            total_records: count || 0,
+            test_query_error: testError ? {
+                code: testError.code,
+                message: testError.message,
+                details: testError.details,
+                hint: testError.hint
+            } : null,
+            sample_record: testData && testData.length > 0 ? testData[0] : null
+        };
+        
+        // Test 2: Check active scholarships
+        const { data: activeData, error: activeError } = await supabase
+            .from('scholarships')
+            .select('id, title, is_active')
+            .eq('is_active', true)
+            .limit(5);
+        
+        result.active_scholarships_count = activeData ? activeData.length : 0;
+        result.active_scholarships = activeData || [];
+        result.active_query_error = activeError ? {
+            code: activeError.code,
+            message: activeError.message
+        } : null;
+        
+        res.json({ success: true, test: result });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
 // Save chatbot message
 app.post('/api/messages', async (req, res) => {
     const { sessionId, sender, message } = req.body;
@@ -649,21 +698,86 @@ app.get('/api/payments', async (req, res) => {
 
 app.get('/api/scholarships', async (req, res) => {
     try {
-        const { data, error } = await supabase
+        console.log('Fetching scholarships from Supabase...');
+        
+        // Try to fetch active scholarships first
+        let query = supabase
             .from('scholarships')
             .select('*')
             .eq('is_active', true)
             .order('deadline', { ascending: true });
         
+        const { data, error } = await query;
+        
         if (error) {
             console.error('Error fetching scholarships:', error);
-            return res.status(500).json({ error: 'Failed to fetch scholarships' });
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+            console.error('Error details:', error.details);
+            console.error('Error hint:', error.hint);
+            
+            // Handle specific error cases
+            if (error.code === 'PGRST116') {
+                // Table doesn't exist
+                console.error('Scholarships table does not exist in Supabase');
+                return res.status(500).json({ 
+                    error: 'Scholarships table not found',
+                    details: 'The scholarships table does not exist in the database. Please create it in Supabase.'
+                });
+            }
+            
+            if (error.code === '42P01') {
+                // Relation does not exist (PostgreSQL error)
+                console.error('Scholarships table does not exist');
+                return res.status(500).json({ 
+                    error: 'Scholarships table not found',
+                    details: 'The scholarships table does not exist in the database.'
+                });
+            }
+            
+            // Check for RLS/permission errors
+            if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+                console.error('Row Level Security (RLS) is blocking access');
+                return res.status(500).json({ 
+                    error: 'Permission denied',
+                    details: 'Row Level Security (RLS) policies are blocking access to scholarships. Please create a public SELECT policy in Supabase.'
+                });
+            }
+            
+            return res.status(500).json({ 
+                error: 'Failed to fetch scholarships',
+                details: error.message || 'Unknown database error',
+                code: error.code
+            });
         }
         
+        // If no active scholarships found, try to get all scholarships to debug
+        if (!data || data.length === 0) {
+            console.log('No active scholarships found. Checking all scholarships...');
+            const { data: allData, error: allError } = await supabase
+                .from('scholarships')
+                .select('id, title, is_active')
+                .limit(5);
+            
+            if (!allError && allData && allData.length > 0) {
+                console.log('Found scholarships in database:', allData);
+                console.log('Note: No scholarships have is_active = true. Returning empty array.');
+            } else if (allError) {
+                console.error('Error checking all scholarships:', allError);
+            } else {
+                console.log('No scholarships found in database at all.');
+            }
+        }
+        
+        console.log(`Successfully fetched ${data ? data.length : 0} active scholarships`);
         res.json({ success: true, scholarships: data || [] });
     } catch (error) {
-        console.error('Error fetching scholarships:', error);
-        res.status(500).json({ error: 'Failed to fetch scholarships' });
+        console.error('Unexpected error fetching scholarships:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Failed to fetch scholarships',
+            details: error.message || 'Unexpected server error'
+        });
     }
 });
 
