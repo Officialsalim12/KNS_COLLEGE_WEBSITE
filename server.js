@@ -4,7 +4,21 @@
  * Uses Supabase as the database backend
  */
 
-require('dotenv').config({ path: '.env.local' });
+// Load environment variables
+// Try .env.local first (for local development), then .env, then use system env vars (for Railway/production)
+const fs = require('fs');
+const path = require('path');
+
+if (fs.existsSync(path.join(__dirname, '.env.local'))) {
+    require('dotenv').config({ path: '.env.local' });
+} else if (fs.existsSync(path.join(__dirname, '.env'))) {
+    require('dotenv').config({ path: '.env' });
+} else {
+    // In production (Railway), environment variables are already set
+    // dotenv will use process.env if no file is found
+    require('dotenv').config();
+}
+
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
@@ -17,9 +31,17 @@ const PORT = process.env.PORT || 3000;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
+// Log environment status (without exposing sensitive values)
+console.log('Environment check:');
+console.log(`  SUPABASE_URL: ${supabaseUrl ? '✓ Set' : '✗ Missing'}`);
+console.log(`  SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✓ Set' : '✗ Missing'}`);
+console.log(`  PORT: ${PORT}`);
+console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+
 if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
-    console.error('Please create a .env file with your Supabase credentials');
+    console.error('For Railway deployment, set these in your Railway project environment variables');
+    console.error('For local development, create a .env.local file with your Supabase credentials');
     process.exit(1);
 }
 
@@ -69,15 +91,29 @@ app.use('/scholarships', express.static('scholarships', {
 // Initialize database connection
 async function initDatabase() {
     try {
+        console.log('Testing Supabase connection...');
         // Test the connection by querying a table
-        const { error } = await supabase.from('messages').select('id').limit(1);
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "relation does not exist"
-            throw error;
+        const { data, error } = await supabase.from('messages').select('id').limit(1);
+        
+        if (error) {
+            // PGRST116 is "relation does not exist" - this is okay, table might not exist yet
+            if (error.code === 'PGRST116') {
+                console.log('✓ Supabase connection successful (messages table does not exist yet)');
+            } else {
+                console.error('✗ Supabase connection error:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                console.error('Error details:', error.details);
+                throw error;
+            }
+        } else {
+            console.log('✓ Connected to Supabase database successfully');
+            console.log(`  Supabase URL: ${supabaseUrl}`);
         }
-        console.log('Connected to Supabase database');
         return Promise.resolve();
     } catch (err) {
-        console.error('Database connection error:', err.message);
+        console.error('✗ Database connection failed:', err.message);
+        console.error('Full error:', err);
         return Promise.reject(err);
     }
 }
