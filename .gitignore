@@ -30,5 +30,5 @@ logs/
 dist/
 build/
 
-# Railway
-.railway/
+# Render
+.render/
