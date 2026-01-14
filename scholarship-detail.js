@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     try {
         const apiBaseUrl = getApiBaseUrl();
-        console.log('Fetching scholarship with API URL:', apiBaseUrl);
         const response = await fetch(`${apiBaseUrl}/api/scholarships/${scholarshipId}`);
         
         if (!response.ok) {
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         const result = await response.json();
-        console.log('Scholarship API response:', result);
         
         if (!result.success || !result.scholarship) {
             showError('Scholarship not found. Please return to the <a href="scholarships.html">scholarships page</a>.');
@@ -63,14 +61,6 @@ function populateScholarshipDetails(scholarship) {
     } else {
         eligibilityContent.innerHTML = '<p class="content-text">Eligibility requirements are being updated. Please contact the scholarships office for more information.</p>';
     }
-    
-    // Log the scholarship data for debugging
-    console.log('Scholarship data:', {
-        id: scholarship.id,
-        title: scholarship.title,
-        guide_path: scholarship.guide_path,
-        form_path: scholarship.form_path
-    });
     
     const deadlineDate = new Date(scholarship.deadline);
     const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
@@ -132,19 +122,12 @@ function populateScholarshipDetails(scholarship) {
         subjectLineExample.textContent = `Application: ${scholarship.title} - [Your Full Name]`;
     }
     
-    // Create download form button if form_path exists
+    // Create application options (download form)
     const downloadButtonContainer = document.getElementById('downloadFormButtonContainer');
-    console.log('=== Download Button Debug ===');
-    console.log('Download button container:', downloadButtonContainer);
-    console.log('Scholarship ID:', scholarship.id);
-    console.log('Scholarship form_path:', scholarship.form_path);
-    console.log('Form path type:', typeof scholarship.form_path);
-    console.log('Form path trimmed:', scholarship.form_path ? scholarship.form_path.trim() : 'null/undefined');
-    console.log('Form path check result:', scholarship.form_path && scholarship.form_path.trim() && scholarship.form_path !== '#');
+    const googleFormLinkElement = document.getElementById('googleFormLink');
     
     if (!downloadButtonContainer) {
         console.error('ERROR: Download button container not found in DOM!');
-        console.error('Looking for element with id: downloadFormButtonContainer');
         return;
     }
     
@@ -157,14 +140,19 @@ function populateScholarshipDetails(scholarship) {
                             scholarship.form_path.trim() !== '' && 
                             scholarship.form_path.trim() !== '#';
     
+    // Check if google_form_url exists and is valid
+    const hasValidGoogleFormUrl = scholarship.google_form_url && 
+                                  typeof scholarship.google_form_url === 'string' && 
+                                  scholarship.google_form_url.trim() !== '' && 
+                                  scholarship.google_form_url.trim() !== '#';
+    
+    // Clear existing content
+    downloadButtonContainer.innerHTML = '';
+    
+    // Create download button if form_path exists
     if (hasValidFormPath) {
         const apiBaseUrl = getApiBaseUrl();
-        console.log('API Base URL:', apiBaseUrl);
         const downloadUrl = `${apiBaseUrl}/api/scholarships/${scholarship.id}/download/form`;
-        console.log('Download URL:', downloadUrl);
-        
-        // Clear any existing content
-        downloadButtonContainer.innerHTML = '';
         
         const downloadButton = document.createElement('a');
         downloadButton.href = downloadUrl;
@@ -185,43 +173,27 @@ function populateScholarshipDetails(scholarship) {
         downloadButton.setAttribute('title', 'Download the scholarship application form');
         
         downloadButtonContainer.appendChild(downloadButton);
-        console.log('Download button created and appended successfully');
-        console.log('Button element:', downloadButton);
-        console.log('Button parent:', downloadButton.parentElement);
-        console.log('Container children count:', downloadButtonContainer.children.length);
-        console.log('Container display style:', window.getComputedStyle(downloadButtonContainer).display);
-        console.log('Button display style:', window.getComputedStyle(downloadButton).display);
-        
-        // Verify button is in DOM and visible
-        setTimeout(() => {
-            const verifyButton = document.querySelector('#downloadFormButtonContainer .btn-download');
-            if (verifyButton) {
-                const computedStyle = window.getComputedStyle(verifyButton);
-                console.log('✓ Button verified in DOM');
-                console.log('Button computed display:', computedStyle.display);
-                console.log('Button computed visibility:', computedStyle.visibility);
-                console.log('Button computed opacity:', computedStyle.opacity);
-                
-                if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
-                    console.warn('⚠ Button exists but is hidden by CSS!');
-                    verifyButton.style.display = 'inline-flex';
-                    verifyButton.style.visibility = 'visible';
-                }
-            } else {
-                console.error('✗ Button NOT found in DOM after creation!');
-                console.error('Attempting to recreate button...');
-                // Try to recreate if it was removed
-                downloadButtonContainer.innerHTML = '';
-                downloadButtonContainer.appendChild(downloadButton);
-            }
-        }, 100);
     } else {
         // Hide the container if no form is available
-        console.log('No form_path available, hiding download button container');
-        console.log('Form path value:', scholarship.form_path);
         downloadButtonContainer.style.display = 'none';
     }
-    console.log('=== End Download Button Debug ===');
+    
+    // Update Google Form link in the text if google_form_url exists
+    if (googleFormLinkElement && hasValidGoogleFormUrl) {
+        googleFormLinkElement.href = scholarship.google_form_url.trim();
+    } else if (googleFormLinkElement && !hasValidGoogleFormUrl) {
+        // If no Google Form URL in database, use the hardcoded URL
+        googleFormLinkElement.href = 'https://docs.google.com/forms/d/e/1FAIpQLSd2hRoPx7ISJe6KWJM5eKWJTT6mntqw74hG6PEfnPTInnClxg/viewform';
+    }
+    
+    // If neither option is available, show a message
+    if (!hasValidFormPath && !hasValidGoogleFormUrl) {
+        const noOptionsMessage = document.createElement('p');
+        noOptionsMessage.className = 'content-text';
+        noOptionsMessage.style.color = '#666';
+        noOptionsMessage.textContent = 'Application form options will be available soon.';
+        downloadButtonContainer.appendChild(noOptionsMessage);
+    }
 }
     
 function getFileNameFromUrl(url, fileType) {
@@ -259,7 +231,6 @@ function showError(message) {
 function getApiBaseUrl() {
     // Use CONFIG.API_BASE_URL from config.js if available (handles all production scenarios)
     if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.API_BASE_URL) {
-        console.log('Using CONFIG.API_BASE_URL:', CONFIG.API_BASE_URL);
         return CONFIG.API_BASE_URL;
     }
     
@@ -269,11 +240,9 @@ function getApiBaseUrl() {
                        window.location.hostname === '';
     
     if (isLocalhost) {
-        console.log('Using localhost fallback');
         return 'http://localhost:3000';
     }
     
     // Final fallback - use window.location.origin
-    console.log('Using window.location.origin fallback:', window.location.origin);
     return window.location.origin;
 }
