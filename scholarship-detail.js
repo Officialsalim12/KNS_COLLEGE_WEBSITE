@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Wait for CONFIG to be available (config.js should load before this script)
+    let retries = 0;
+    const maxRetries = 10;
+    while (typeof CONFIG === 'undefined' && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+    
+    if (typeof CONFIG === 'undefined') {
+        console.warn('CONFIG not available after waiting, using fallback');
+    }
+    
     const urlParams = new URLSearchParams(window.location.search);
     const scholarshipId = urlParams.get('id');
     
@@ -8,8 +20,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     try {
-        const response = await fetch(`${getApiBaseUrl()}/api/scholarships/${scholarshipId}`);
+        const apiBaseUrl = getApiBaseUrl();
+        console.log('Fetching scholarship with API URL:', apiBaseUrl);
+        const response = await fetch(`${apiBaseUrl}/api/scholarships/${scholarshipId}`);
+        
+        if (!response.ok) {
+            console.error('API response not OK:', response.status, response.statusText);
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+        
         const result = await response.json();
+        console.log('Scholarship API response:', result);
         
         if (!result.success || !result.scholarship) {
             showError('Scholarship not found. Please return to the <a href="scholarships.html">scholarships page</a>.');
@@ -51,13 +72,6 @@ function populateScholarshipDetails(scholarship) {
         form_path: scholarship.form_path
     });
     
-    const scholarshipId = new URLSearchParams(window.location.search).get('id');
-    
-    setupDownloadLink('guideDownloadLink', scholarship.guide_path, 'Guide', scholarshipId);
-    setupDownloadLink('sidebarGuideLink', scholarship.guide_path, 'Guide', scholarshipId);
-    setupDownloadLink('formDownloadLink', scholarship.form_path, 'Form', scholarshipId);
-    setupDownloadLink('sidebarFormLink', scholarship.form_path, 'Form', scholarshipId);
-    
     const deadlineDate = new Date(scholarship.deadline);
     const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
         weekday: 'long',
@@ -71,131 +85,145 @@ function populateScholarshipDetails(scholarship) {
     
     document.getElementById('deadlineDate').innerHTML = `<span class="deadline-highlight">${formattedDeadline}</span>`;
     
+    // Setup live countdown to the deadline
+    const countdownElement = document.getElementById('deadlineCountdown');
+    if (countdownElement) {
+        function formatTimePart(value, label) {
+            return `${value} ${label}${value === 1 ? '' : 's'}`;
+        }
+        
+        function updateCountdown() {
+            const now = new Date();
+            const diffMs = deadlineDate.getTime() - now.getTime();
+            
+            if (isNaN(deadlineDate.getTime())) {
+                countdownElement.textContent = 'Deadline date is being updated. Please check back later.';
+                return;
+            }
+            
+            if (diffMs <= 0) {
+                countdownElement.textContent = 'The application deadline has passed.';
+                countdownElement.classList.add('deadline-passed');
+                return;
+            }
+            
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const days = Math.floor(totalSeconds / (24 * 60 * 60));
+            const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+            const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+            const seconds = totalSeconds % 60;
+            
+            const parts = [];
+            if (days > 0) parts.push(formatTimePart(days, 'day'));
+            if (hours > 0 || days > 0) parts.push(formatTimePart(hours, 'hour'));
+            if (minutes > 0 || hours > 0 || days > 0) parts.push(formatTimePart(minutes, 'minute'));
+            parts.push(formatTimePart(seconds, 'second'));
+            
+            countdownElement.textContent = `Time remaining: ${parts.join(', ')}`;
+        }
+        
+        // Initial render and interval
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    }
+    
     const subjectLineExample = document.querySelector('.subject-line-example code');
     if (subjectLineExample) {
         subjectLineExample.textContent = `Application: ${scholarship.title} - [Your Full Name]`;
     }
-}
-
-function setupDownloadLink(elementId, filePath, fileType, scholarshipId) {
-    const link = document.getElementById(elementId);
-    if (!link) {
-        console.warn(`Download link element not found: ${elementId}`);
+    
+    // Create download form button if form_path exists
+    const downloadButtonContainer = document.getElementById('downloadFormButtonContainer');
+    console.log('=== Download Button Debug ===');
+    console.log('Download button container:', downloadButtonContainer);
+    console.log('Scholarship ID:', scholarship.id);
+    console.log('Scholarship form_path:', scholarship.form_path);
+    console.log('Form path type:', typeof scholarship.form_path);
+    console.log('Form path trimmed:', scholarship.form_path ? scholarship.form_path.trim() : 'null/undefined');
+    console.log('Form path check result:', scholarship.form_path && scholarship.form_path.trim() && scholarship.form_path !== '#');
+    
+    if (!downloadButtonContainer) {
+        console.error('ERROR: Download button container not found in DOM!');
+        console.error('Looking for element with id: downloadFormButtonContainer');
         return;
     }
     
-    if (!filePath || filePath === '#' || filePath.trim() === '') {
-        console.warn(`No file path provided for ${elementId}`);
-        link.style.display = 'none';
-        return;
-    }
+    // Ensure container is visible
+    downloadButtonContainer.style.display = '';
     
-    // Construct the proper download URL
-    let downloadUrl;
-    const trimmedPath = filePath.trim();
+    // Check if form_path exists and is valid (not empty, not '#', not null/undefined)
+    const hasValidFormPath = scholarship.form_path && 
+                            typeof scholarship.form_path === 'string' && 
+                            scholarship.form_path.trim() !== '' && 
+                            scholarship.form_path.trim() !== '#';
     
-    // If it's already a full URL (http:// or https://), use it as is
-    if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
-        downloadUrl = trimmedPath;
-    } 
-    // If we have a scholarship ID, always use the API endpoint for better reliability
-    else if (scholarshipId) {
+    if (hasValidFormPath) {
         const apiBaseUrl = getApiBaseUrl();
-        const downloadType = fileType.toLowerCase();
-        downloadUrl = `${apiBaseUrl}/api/scholarships/${scholarshipId}/download/${downloadType}`;
-    }
-    // Otherwise, try static file path
-    else {
-        // If it starts with /, it's an absolute path - use it as is
-        if (trimmedPath.startsWith('/')) {
-            downloadUrl = trimmedPath;
-        }
-        // If it contains 'scholarships/', normalize it
-        else if (trimmedPath.includes('scholarships/')) {
-            downloadUrl = '/' + trimmedPath.replace(/^\/+/, '');
-        }
-        // Otherwise, assume it's a filename and prepend /scholarships/
-        else {
-            // Remove any leading slashes or 'scholarships/' prefix
-            const cleanPath = trimmedPath.replace(/^\/+/, '').replace(/^scholarships\//, '');
-            downloadUrl = `/scholarships/${cleanPath}`;
-        }
-    }
-    
-    // Set the href for fallback
-    link.href = downloadUrl;
-    link.style.display = '';
-    
-    // Remove target="_blank" to prevent opening in new tab
-    link.removeAttribute('target');
-    
-    // Add click handler to programmatically download the file
-    link.addEventListener('click', async function(e) {
-        e.preventDefault(); // Prevent default navigation
-        e.stopPropagation();
+        console.log('API Base URL:', apiBaseUrl);
+        const downloadUrl = `${apiBaseUrl}/api/scholarships/${scholarship.id}/download/form`;
+        console.log('Download URL:', downloadUrl);
         
-        console.log(`Download button clicked: ${fileType}`);
-        console.log(`Download URL: ${downloadUrl}`);
+        // Clear any existing content
+        downloadButtonContainer.innerHTML = '';
         
-        try {
-            // For external URLs (http/https), use direct download
-            if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
-                // Check if it's an external URL (not our API)
-                const isExternalUrl = !downloadUrl.includes('/api/scholarships/');
-                if (isExternalUrl) {
-                    // For external URLs, open in new tab (they handle their own download)
-                    window.open(downloadUrl, '_blank', 'noopener,noreferrer');
-                    return;
+        const downloadButton = document.createElement('a');
+        downloadButton.href = downloadUrl;
+        downloadButton.className = 'btn btn-download btn-download-primary btn-block';
+        downloadButton.style.marginBottom = 'var(--spacing-md)';
+        downloadButton.style.display = 'inline-flex';
+        downloadButton.style.alignItems = 'center';
+        downloadButton.style.justifyContent = 'center';
+        downloadButton.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download Application Form
+        `;
+        downloadButton.setAttribute('download', '');
+        downloadButton.setAttribute('title', 'Download the scholarship application form');
+        
+        downloadButtonContainer.appendChild(downloadButton);
+        console.log('Download button created and appended successfully');
+        console.log('Button element:', downloadButton);
+        console.log('Button parent:', downloadButton.parentElement);
+        console.log('Container children count:', downloadButtonContainer.children.length);
+        console.log('Container display style:', window.getComputedStyle(downloadButtonContainer).display);
+        console.log('Button display style:', window.getComputedStyle(downloadButton).display);
+        
+        // Verify button is in DOM and visible
+        setTimeout(() => {
+            const verifyButton = document.querySelector('#downloadFormButtonContainer .btn-download');
+            if (verifyButton) {
+                const computedStyle = window.getComputedStyle(verifyButton);
+                console.log('✓ Button verified in DOM');
+                console.log('Button computed display:', computedStyle.display);
+                console.log('Button computed visibility:', computedStyle.visibility);
+                console.log('Button computed opacity:', computedStyle.opacity);
+                
+                if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+                    console.warn('⚠ Button exists but is hidden by CSS!');
+                    verifyButton.style.display = 'inline-flex';
+                    verifyButton.style.visibility = 'visible';
                 }
+            } else {
+                console.error('✗ Button NOT found in DOM after creation!');
+                console.error('Attempting to recreate button...');
+                // Try to recreate if it was removed
+                downloadButtonContainer.innerHTML = '';
+                downloadButtonContainer.appendChild(downloadButton);
             }
-            
-            // For API endpoints or same-origin files, fetch and download programmatically
-            const response = await fetch(downloadUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/octet-stream'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-            }
-            
-            // Get the blob from the response
-            const blob = await response.blob();
-            
-            // Get filename from Content-Disposition header or use default
-            let filename = `${fileType.toLowerCase()}-${scholarshipId || 'file'}.pdf`;
-            const contentDisposition = response.headers.get('Content-Disposition');
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (filenameMatch && filenameMatch[1]) {
-                    filename = filenameMatch[1].replace(/['"]/g, '');
-                }
-            }
-            
-            // Create a temporary URL and trigger download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            
-            // Clean up
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            console.log(`Download started: ${filename}`);
-        } catch (error) {
-            console.error('Download error:', error);
-            alert(`Failed to download ${fileType.toLowerCase()}. Please try again or contact support.`);
-        }
-    });
-    
-    console.log(`Download link configured for ${elementId} (${fileType}): ${downloadUrl}`);
+        }, 100);
+    } else {
+        // Hide the container if no form is available
+        console.log('No form_path available, hiding download button container');
+        console.log('Form path value:', scholarship.form_path);
+        downloadButtonContainer.style.display = 'none';
+    }
+    console.log('=== End Download Button Debug ===');
 }
-
+    
 function getFileNameFromUrl(url, fileType) {
     try {
         const urlObj = new URL(url);
@@ -229,20 +257,23 @@ function showError(message) {
 }
 
 function getApiBaseUrl() {
+    // Use CONFIG.API_BASE_URL from config.js if available (handles all production scenarios)
+    if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.API_BASE_URL) {
+        console.log('Using CONFIG.API_BASE_URL:', CONFIG.API_BASE_URL);
+        return CONFIG.API_BASE_URL;
+    }
+    
+    // Fallback for localhost development
     const isLocalhost = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
                        window.location.hostname === '';
     
     if (isLocalhost) {
+        console.log('Using localhost fallback');
         return 'http://localhost:3000';
     }
     
-    if (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) {
-        if (CONFIG.API_BASE_URL.startsWith('http://') || CONFIG.API_BASE_URL.startsWith('https://')) {
-            return CONFIG.API_BASE_URL;
-        }
-        return `https://${CONFIG.API_BASE_URL}`;
-    }
-    
+    // Final fallback - use window.location.origin
+    console.log('Using window.location.origin fallback:', window.location.origin);
     return window.location.origin;
 }
