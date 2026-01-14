@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (applicationForm) {
         applicationForm.addEventListener('submit', function(e) {
-            console.log('Form submitted');
+            // Form submitted
         });
     }
     

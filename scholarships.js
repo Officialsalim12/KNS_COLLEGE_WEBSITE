@@ -58,20 +58,6 @@ async function loadScholarships(scholarshipsGrid) {
         const normalizedBaseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
         fullUrl = `${normalizedBaseUrl}${normalizedEndpoint}`;
         
-        console.log('=== Scholarships Fetch Debug ===');
-        console.log('Current Page URL:', window.location.href);
-        console.log('Current Origin:', window.location.origin);
-        console.log('Current Hostname:', window.location.hostname);
-        console.log('API Base URL:', apiBaseUrl);
-        console.log('Endpoint:', endpoint);
-        console.log('Normalized Base URL:', normalizedBaseUrl);
-        console.log('Normalized Endpoint:', normalizedEndpoint);
-        console.log('Full URL to fetch:', fullUrl);
-        console.log('CONFIG available:', typeof CONFIG !== 'undefined');
-        console.log('CONFIG.API_BASE_URL:', typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'N/A');
-        console.log('CONFIG.ENDPOINTS:', typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS ? CONFIG.ENDPOINTS : 'N/A');
-        console.log('===============================');
-        
         // Validate URL before making request
         if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
             throw new Error(`Invalid API URL: ${fullUrl}. URL must start with http:// or https://`);
@@ -121,7 +107,6 @@ async function loadScholarships(scholarshipsGrid) {
         }
         
         const result = await response.json();
-        console.log('Scholarships API response:', result); // Debug log
         
         if (!result.success) {
             console.error('API returned success: false', result);

@@ -619,7 +619,7 @@ body {
 }
 
 .content-list li::before {
-    content: "▸";
+    content: "•";
     position: absolute;
     left: 0;
     color: var(--primary-color);
@@ -8737,6 +8737,15 @@ body {
     margin-right: auto;
 }
 
+.scholarships-intro .content-list li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
 .scholarships-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -8843,7 +8852,17 @@ body {
 
 .eligibility-list li {
     margin-bottom: var(--spacing-sm);
-    padding-left: var(--spacing-sm);
+    padding-left: var(--spacing-lg);
+    position: relative;
+}
+
+.eligibility-list li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.2rem;
 }
 
 /* Download Buttons - High Contrast for Accessibility */

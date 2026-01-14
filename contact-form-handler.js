@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 const fullUrl = `${apiBaseUrl}${endpoint}`;
-                console.log('Submitting contact form to:', fullUrl);
                 
                 const response = await fetch(fullUrl, {
                     method: 'POST',

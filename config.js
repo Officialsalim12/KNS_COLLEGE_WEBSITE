@@ -45,7 +45,6 @@ function getApiBaseUrl() {
     // Or set it in localStorage: localStorage.setItem('API_BASE_URL', 'https://your-backend.onrender.com')
     if (typeof window !== 'undefined' && window.RENDER_API_URL) {
         const normalized = normalizeApiUrl(window.RENDER_API_URL);
-        console.log('Using window.RENDER_API_URL:', window.RENDER_API_URL, '-> normalized:', normalized);
         return normalized || 'https://kns-college-website.onrender.com';
     }
     
@@ -60,7 +59,6 @@ function getApiBaseUrl() {
                 console.warn('Stored API_BASE_URL is not the Render backend. Clearing and using default.');
                 localStorage.removeItem('API_BASE_URL');
             } else if (normalized) {
-                console.log('Using localStorage API_BASE_URL:', storedApiUrl, '-> normalized:', normalized);
                 return normalized;
             }
         }
@@ -71,22 +69,17 @@ function getApiBaseUrl() {
     // Check if we're on Render (backend domain) - use same origin
     const currentOrigin = window.location.origin;
     if (currentOrigin.includes('onrender.com') || currentOrigin.includes('kns-college-website')) {
-        console.log('Using window.location.origin as API base URL (on Render):', currentOrigin);
         return currentOrigin;
     }
     
     // Frontend is on www.kns.edu.sl or other domain - use Render backend
     // Explicitly check for the production frontend domain
     if (currentOrigin.includes('kns.edu.sl') || currentOrigin.includes('www.kns.edu.sl')) {
-        const renderBackendUrl = 'https://kns-college-website.onrender.com';
-        console.log('Frontend on kns.edu.sl domain, using Render backend:', renderBackendUrl);
-        return renderBackendUrl;
+        return 'https://kns-college-website.onrender.com';
     }
     
     // Fallback: Frontend is on other domain - use Render backend
-    const renderBackendUrl = 'https://kns-college-website.onrender.com';
-    console.log('Frontend on different domain, using Render backend:', renderBackendUrl);
-    return renderBackendUrl;
+    return 'https://kns-college-website.onrender.com';
 }
 
 // Calculate API base URL
@@ -98,24 +91,19 @@ if (!calculatedApiBaseUrl.startsWith('http://') && !calculatedApiBaseUrl.startsW
     calculatedApiBaseUrl = normalizeApiUrl(calculatedApiBaseUrl) || 'https://kns-college-website.onrender.com';
 }
 
-// Log configuration for debugging
-console.log('=== CONFIG.JS Loaded ===');
-console.log('Current hostname:', window.location.hostname);
-console.log('Current origin:', window.location.origin);
-console.log('Calculated API Base URL:', calculatedApiBaseUrl);
-console.log('========================');
+// Configuration loaded
 
 // Utility function to reset API URL (can be called from browser console)
 if (typeof window !== 'undefined') {
     window.resetApiUrl = function() {
         try {
             localStorage.removeItem('API_BASE_URL');
-            console.log('API_BASE_URL cleared from localStorage. Reload the page to use default.');
+            // API_BASE_URL cleared from localStorage. Reload the page to use default.
         } catch (e) {
             console.error('Could not clear localStorage:', e);
         }
     };
-    console.log('Utility function available: window.resetApiUrl() - Call this to clear incorrect API URL from localStorage');
+    // Utility function available: window.resetApiUrl() - Call this to clear incorrect API URL from localStorage
 }
 
 const CONFIG = {

@@ -147,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Send form data to backend API
                 const fullUrl = `${apiBaseUrl}${endpoint}`;
-                console.log('Submitting enquiry form to:', fullUrl); // Debug log
                 
                 const response = await fetch(fullUrl, {
                     method: 'POST',

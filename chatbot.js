@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         {
             keywords: ['admission', 'admissions', 'apply', 'application', 'enroll', 'enrollment', 'how to apply', 'application process', 'register', 'registration', 'sign up', 'join', 'become student'],
             question: 'How do I apply for admission?',
-            answer: 'You can apply for admission by visiting our Admissions page or contacting us directly. The application process is simple: 1) Choose your programme, 2) Apply online at www.kns.sl/apply, 3) Submit required documents, 4) Pay enrollment fee. We offer rolling enrollment with start dates in January, May, or September. Contact us at admission@kns.edu.sl or +232 79 422 442 for assistance.'
+            answer: 'You can apply for admission by visiting our Admissions page or contacting us directly. The application process is simple: 1) Choose your programme, 2) Apply online at webportal.kns.edu.sl/register, 3) Submit required documents, 4) Pay enrollment fee. We offer rolling enrollment with start dates in January, May, or September. Contact us at admission@kns.edu.sl or +232 79 422 442 for assistance.'
         },
         {
             keywords: ['requirement', 'requirements', 'eligibility', 'qualification', 'qualify', 'need', 'prerequisite', 'prerequisites', 'what do i need'],
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
         {
             keywords: ['website', 'url', 'web address', 'online', 'visit'],
             question: 'What is your website?',
-            answer: 'Our website is www.kns.sl. You can find detailed information about our programmes, admissions process, and contact details there. You can also apply online at www.kns.sl/apply.'
+            answer: 'Our website is www.kns.sl. You can find detailed information about our programmes, admissions process, and contact details there. You can also apply online at webportal.kns.edu.sl/register.'
         },
         {
             keywords: ['help', 'support', 'assistance', 'need help', 'question', 'inquiry', 'information'],
