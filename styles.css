@@ -8850,6 +8850,45 @@ body {
     font-style: italic;
 }
 
+/* Deadline Countdown - High Emphasis */
+.deadline-countdown {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-h3);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    border: 3px solid #ffeb3b;
+    color: #ffeb3b;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08), 0 0 18px rgba(255, 235, 59, 0.65);
+    animation: countdown-pulse 1.3s ease-in-out infinite;
+}
+
+.deadline-countdown.deadline-passed {
+    border-color: #ff5252;
+    color: #ff8a80;
+    background: rgba(0, 0, 0, 0.25);
+    animation: none;
+}
+
+@keyframes countdown-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08), 0 0 10px rgba(255, 235, 59, 0.4);
+    }
+    50% {
+        transform: scale(1.03);
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.12), 0 0 22px rgba(255, 235, 59, 0.9);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08), 0 0 10px rgba(255, 235, 59, 0.4);
+    }
+}
+
 /* Loading and Error Messages */
 .loading-message,
 .no-scholarships-message,
