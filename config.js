@@ -133,7 +133,6 @@ const CONFIG = {
      */
     API_BASE_URL: calculatedApiBaseUrl,
     
-    // API endpoints
     ENDPOINTS: {
         MESSAGES: '/api/messages',
         CONTACTS: '/api/contacts',
@@ -145,17 +144,13 @@ const CONFIG = {
         HEALTH: '/api/health'
     },
     
-    // Payment gateway endpoint
-    // Update this with your actual Monime payment endpoint URL
-    MONIME_ENDPOINT: 'https://monime.com/payment' // Replace with actual Monime endpoint
+    MONIME_ENDPOINT: 'https://monime.com/payment'
 };
 
-// Generate a unique session ID for chatbot conversations
 function generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// Get or create session ID from sessionStorage
 function getSessionId() {
     let sessionId = sessionStorage.getItem('chatbot_session_id');
     if (!sessionId) {
