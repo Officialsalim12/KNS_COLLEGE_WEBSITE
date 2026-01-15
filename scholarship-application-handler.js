@@ -152,6 +152,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Create JSON object from form data (no file uploads)
+                const nationalIdValue = document.getElementById('national_id').value.trim();
+                if (!nationalIdValue) {
+                    showFormMessage('error', 'National ID Number is required. Please enter your National ID number.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalBtnText;
+                    return;
+                }
+                
                 const formData = {
                     scholarship_id: document.getElementById('scholarship_id').value || null,
                     surname: document.getElementById('surname').value,
@@ -160,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     gender: document.getElementById('gender').value,
                     date_of_birth: document.getElementById('date_of_birth').value,
                     nationality: document.getElementById('nationality').value,
-                    national_id: document.getElementById('national_id').value,
+                    national_id: nationalIdValue,
                     address: document.getElementById('address').value,
                     city: document.getElementById('city').value,
                     phone: document.getElementById('phone').value,

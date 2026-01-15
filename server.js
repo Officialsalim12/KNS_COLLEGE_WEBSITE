@@ -49,7 +49,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Configure SendGrid
-const sendgridApiKey = process.env.SENDGRID_API_KEY;
+// Trim and clean the API key to remove any whitespace or newlines that could cause issues
+const sendgridApiKey = process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.trim() : null;
 // Use verified sender: scholarships@kns.edu.sl
 // If SENDGRID_FROM_EMAIL is set but not the verified email, use the verified one instead
 const envFromEmail = process.env.SENDGRID_FROM_EMAIL;
@@ -63,6 +64,7 @@ if (!sendgridApiKey) {
         'Warning: SENDGRID_API_KEY is not set. Contact form emails will not be sent.'
     );
 } else {
+    // Set API key with cleaned value
     sgMail.setApiKey(sendgridApiKey);
     console.log('SendGrid Configuration:');
     console.log(`  From Email: ${sendgridFromEmail} ${sendgridFromEmail === verifiedSenderEmail ? '✓ (Verified)' : '⚠️ (Not verified)'}`);
@@ -1244,13 +1246,14 @@ app.post('/api/scholarship-applications', async (req, res) => {
             declaration
         } = req.body;
         
-        // Validate required fields
-        if (!surname || !first_name || !gender || !date_of_birth || !nationality || !national_id ||
+        // Validate required fields - ensure national_id is not empty or null
+        if (!surname || !first_name || !gender || !date_of_birth || !nationality || 
+            !national_id || national_id.trim() === '' ||
             !address || !city || !phone || !email || !highest_qualification || !school_institution ||
             !year_of_completion || !programme || !scholarship_type || !previous_application ||
             !personal_statement || declaration !== 'on') {
             return res.status(400).json({ 
-                error: 'Missing required fields. Please ensure all required fields are completed.' 
+                error: 'Missing required fields. Please ensure all required fields are completed, including National ID Number.' 
             });
         }
         
@@ -1277,7 +1280,7 @@ app.post('/api/scholarship-applications', async (req, res) => {
                     gender: gender,
                     date_of_birth: date_of_birth,
                     nationality: nationality,
-                    national_id: national_id,
+                    national_id: national_id.trim(), // Ensure no leading/trailing whitespace
                     address: address,
                     city: city,
                     phone: phone,
