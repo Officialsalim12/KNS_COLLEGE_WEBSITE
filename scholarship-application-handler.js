@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 // Get API base URL from config
-                const apiBaseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
+                let apiBaseUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) 
                     ? CONFIG.API_BASE_URL 
                     : 'http://localhost:3000';
                 
@@ -142,8 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                     window.location.hostname !== '';
                 const isSameOrigin = apiBaseUrl === window.location.origin;
                 
+                // If in production and same-origin, use PRODUCTION_API_URL instead
                 if (isProduction && isSameOrigin) {
-                    throw new Error('Backend API not configured. Please set PRODUCTION_API_URL in config.js to your deployed backend server URL.');
+                    if (typeof CONFIG !== 'undefined' && CONFIG.PRODUCTION_API_URL) {
+                        apiBaseUrl = CONFIG.PRODUCTION_API_URL;
+                    } else {
+                        throw new Error('Backend API not configured. Please set PRODUCTION_API_URL in config.js to your deployed backend server URL.');
+                    }
                 }
                 
                 // Create JSON object from form data (no file uploads)

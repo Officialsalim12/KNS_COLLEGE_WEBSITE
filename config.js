@@ -121,6 +121,12 @@ const CONFIG = {
      */
     API_BASE_URL: calculatedApiBaseUrl,
     
+    /**
+     * Production API URL
+     * The deployed backend server URL for production environments
+     */
+    PRODUCTION_API_URL: 'https://kns-college-website.onrender.com',
+    
     ENDPOINTS: {
         MESSAGES: '/api/messages',
         CONTACTS: '/api/contacts',
