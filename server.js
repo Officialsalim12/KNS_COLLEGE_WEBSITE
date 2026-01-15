@@ -1227,7 +1227,6 @@ app.post('/api/scholarship-applications', async (req, res) => {
             gender,
             date_of_birth,
             nationality,
-            national_id,
             address,
             city,
             phone,
@@ -1245,7 +1244,7 @@ app.post('/api/scholarship-applications', async (req, res) => {
         } = req.body;
         
         // Validate required fields
-        if (!surname || !first_name || !gender || !date_of_birth || !nationality || !national_id ||
+        if (!surname || !first_name || !gender || !date_of_birth || !nationality ||
             !address || !city || !phone || !email || !highest_qualification || !school_institution ||
             !year_of_completion || !programme || !scholarship_type || !previous_application ||
             !personal_statement || declaration !== 'on') {
@@ -1277,7 +1276,6 @@ app.post('/api/scholarship-applications', async (req, res) => {
                     gender: gender,
                     date_of_birth: date_of_birth,
                     nationality: nationality,
-                    national_id: national_id,
                     address: address,
                     city: city,
                     phone: phone,
@@ -1326,7 +1324,6 @@ Name: ${surname}, ${first_name} ${other_names || ''}
 Gender: ${gender}
 Date of Birth: ${date_of_birth}
 Nationality: ${nationality}
-National ID/Passport: ${national_id}
 
 Contact Information:
 Address: ${address}
@@ -1372,7 +1369,6 @@ Submitted At: ${new Date().toISOString()}
                 <p><strong>Gender:</strong> ${gender}</p>
                 <p><strong>Date of Birth:</strong> ${date_of_birth}</p>
                 <p><strong>Nationality:</strong> ${nationality}</p>
-                <p><strong>National ID/Passport:</strong> ${national_id}</p>
                 
                 <h3>Contact Information</h3>
                 <p><strong>Address:</strong> ${address}</p>
