@@ -44,7 +44,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 function populateScholarshipDetails(scholarship) {
     document.getElementById('scholarshipTitle').textContent = scholarship.title;
-    document.getElementById('scholarshipAward').textContent = scholarship.award_summary;
+    // Process award summary to remove percentages
+    const cleanedAwardSummary = removePercentagesFromText(scholarship.award_summary);
+    document.getElementById('scholarshipAward').textContent = cleanedAwardSummary;
     document.title = `${scholarship.title} - Scholarships - KNS College`;
     
     const eligibilityContent = document.getElementById('eligibilityContent');
@@ -62,7 +64,9 @@ function populateScholarshipDetails(scholarship) {
         eligibilityContent.innerHTML = '<p class="content-text">Eligibility requirements are being updated. Please contact the scholarships office for more information.</p>';
     }
     
-    const deadlineDate = new Date(scholarship.deadline);
+    // Force deadline to 22 January 2026 at 11:59 PM (override API value)
+    const deadlineDate = new Date('2026-01-22T23:59:59');
+    
     const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -117,82 +121,30 @@ function populateScholarshipDetails(scholarship) {
         setInterval(updateCountdown, 1000);
     }
     
-    const subjectLineExample = document.querySelector('.subject-line-example code');
-    if (subjectLineExample) {
-        subjectLineExample.textContent = `Application: ${scholarship.title} - [Your Full Name]`;
+    // Update Apply Now button to scroll to form (form is on same page)
+    const applyNowButton = document.getElementById('applyNowButton');
+    if (applyNowButton) {
+        applyNowButton.href = '#applicationFormSection';
+        // Add smooth scroll behavior
+        applyNowButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            const formSection = document.getElementById('applicationFormSection');
+            if (formSection) {
+                formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
     }
     
-    // Create application options (download form)
-    const downloadButtonContainer = document.getElementById('downloadFormButtonContainer');
-    const googleFormLinkElement = document.getElementById('googleFormLink');
-    
-    if (!downloadButtonContainer) {
-        console.error('ERROR: Download button container not found in DOM!');
-        return;
+    // Set scholarship ID in the form (if form exists on this page)
+    const scholarshipIdInput = document.getElementById('scholarship_id');
+    if (scholarshipIdInput) {
+        scholarshipIdInput.value = scholarship.id;
     }
     
-    // Ensure container is visible
-    downloadButtonContainer.style.display = '';
-    
-    // Check if form_path exists and is valid (not empty, not '#', not null/undefined)
-    const hasValidFormPath = scholarship.form_path && 
-                            typeof scholarship.form_path === 'string' && 
-                            scholarship.form_path.trim() !== '' && 
-                            scholarship.form_path.trim() !== '#';
-    
-    // Check if google_form_url exists and is valid
-    const hasValidGoogleFormUrl = scholarship.google_form_url && 
-                                  typeof scholarship.google_form_url === 'string' && 
-                                  scholarship.google_form_url.trim() !== '' && 
-                                  scholarship.google_form_url.trim() !== '#';
-    
-    // Clear existing content
-    downloadButtonContainer.innerHTML = '';
-    
-    // Create download button if form_path exists
-    if (hasValidFormPath) {
-        const apiBaseUrl = getApiBaseUrl();
-        const downloadUrl = `${apiBaseUrl}/api/scholarships/${scholarship.id}/download/form`;
-        
-        const downloadButton = document.createElement('a');
-        downloadButton.href = downloadUrl;
-        downloadButton.className = 'btn btn-download btn-download-primary btn-block';
-        downloadButton.style.marginBottom = 'var(--spacing-md)';
-        downloadButton.style.display = 'inline-flex';
-        downloadButton.style.alignItems = 'center';
-        downloadButton.style.justifyContent = 'center';
-        downloadButton.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Download Application Form
-        `;
-        downloadButton.setAttribute('download', '');
-        downloadButton.setAttribute('title', 'Download the scholarship application form');
-        
-        downloadButtonContainer.appendChild(downloadButton);
-    } else {
-        // Hide the container if no form is available
-        downloadButtonContainer.style.display = 'none';
-    }
-    
-    // Update Google Form link in the text if google_form_url exists
-    if (googleFormLinkElement && hasValidGoogleFormUrl) {
-        googleFormLinkElement.href = scholarship.google_form_url.trim();
-    } else if (googleFormLinkElement && !hasValidGoogleFormUrl) {
-        // If no Google Form URL in database, use the hardcoded URL
-        googleFormLinkElement.href = 'https://docs.google.com/forms/d/e/1FAIpQLSd2hRoPx7ISJe6KWJM5eKWJTT6mntqw74hG6PEfnPTInnClxg/viewform';
-    }
-    
-    // If neither option is available, show a message
-    if (!hasValidFormPath && !hasValidGoogleFormUrl) {
-        const noOptionsMessage = document.createElement('p');
-        noOptionsMessage.className = 'content-text';
-        noOptionsMessage.style.color = '#666';
-        noOptionsMessage.textContent = 'Application form options will be available soon.';
-        downloadButtonContainer.appendChild(noOptionsMessage);
+    // Update deadline text in the form alert box
+    const formDeadlineText = document.getElementById('formDeadlineText');
+    if (formDeadlineText) {
+        formDeadlineText.textContent = formattedDeadline;
     }
 }
     
@@ -226,6 +178,38 @@ function showError(message) {
             </div>
         `;
     }
+}
+
+function removePercentagesFromText(text) {
+    if (!text) return text;
+    
+    let cleaned = text;
+    
+    // Replace specific patterns first (most specific to least specific)
+    cleaned = cleaned
+        // Handle "Fully funded and 60% discount on tuition fees"
+        .replace(/Fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
+        .replace(/fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
+        // Handle "60% discount on tuition fees"
+        .replace(/\d+% discount on tuition fees/gi, 'partial funding on tuition fees')
+        // Handle "100% of tuition fees" or "100% tuition fee coverage"
+        .replace(/100%\s*(of tuition fees|tuition fee coverage|coverage)/gi, 'fully funded')
+        // Handle "60% tuition fee discount" or "Minimum 60% tuition fee discount"
+        .replace(/(Minimum\s+)?\d+% tuition fee discount/gi, 'partial funding')
+        // Handle "Covers 100% of tuition fees"
+        .replace(/Covers \d+% of tuition fees/gi, 'Fully funded')
+        // Handle any remaining percentage with "discount"
+        .replace(/\d+%\s*discount/gi, 'partial funding')
+        // Handle any remaining percentage with "coverage"
+        .replace(/\d+%\s*coverage/gi, 'fully funded')
+        // Remove standalone percentages (like "60%" or "100%")
+        .replace(/\b\d+%\b/g, '')
+        // Clean up extra spaces
+        .replace(/\s+/g, ' ')
+        .replace(/\s+and\s+/gi, ' and ')
+        .trim();
+    
+    return cleaned;
 }
 
 function getApiBaseUrl() {

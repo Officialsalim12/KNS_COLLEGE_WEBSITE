@@ -23,6 +23,7 @@ const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const sgMail = require('@sendgrid/mail');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,9 +50,13 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Configure SendGrid
 const sendgridApiKey = process.env.SENDGRID_API_KEY;
-const sendgridFromEmail = process.env.SENDGRID_FROM_EMAIL;
+// Use verified sender: scholarships@kns.edu.sl
+// If SENDGRID_FROM_EMAIL is set but not the verified email, use the verified one instead
+const envFromEmail = process.env.SENDGRID_FROM_EMAIL;
+const verifiedSenderEmail = 'scholarships@kns.edu.sl';
+const sendgridFromEmail = (envFromEmail === verifiedSenderEmail) ? envFromEmail : verifiedSenderEmail;
 const sendgridToEmail =
-    process.env.SENDGRID_TO_EMAIL || process.env.SENDGRID_FROM_EMAIL;
+    process.env.SENDGRID_TO_EMAIL || sendgridFromEmail;
 
 if (!sendgridApiKey) {
     console.warn(
@@ -59,6 +64,13 @@ if (!sendgridApiKey) {
     );
 } else {
     sgMail.setApiKey(sendgridApiKey);
+    console.log('SendGrid Configuration:');
+    console.log(`  From Email: ${sendgridFromEmail} ${sendgridFromEmail === verifiedSenderEmail ? '✓ (Verified)' : '⚠️ (Not verified)'}`);
+    if (envFromEmail && envFromEmail !== verifiedSenderEmail) {
+        console.warn(`  ⚠️  Warning: SENDGRID_FROM_EMAIL was set to "${envFromEmail}" but using verified sender "${verifiedSenderEmail}" instead.`);
+    }
+    console.log(`  To Email: ${sendgridToEmail}`);
+    console.log(`  API Key: ${sendgridApiKey ? '✓ Set' : '✗ Missing'}\n`);
 }
 
 // Middleware
@@ -147,6 +159,31 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage(); // Store files in memory (can be changed to disk storage)
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit per file
+    },
+    fileFilter: (req, file, cb) => {
+        // Accept PDF, images, and document files
+        const allowedMimes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only PDF, JPG, PNG, DOC, and DOCX files are allowed.'), false);
+        }
+    }
+});
 
 // Request logging middleware (for debugging)
 app.use((req, res, next) => {
@@ -519,10 +556,24 @@ Submitted At: ${new Date().toISOString()}
         sgMail
             .send(msg)
             .then(() => {
-                console.log('Contact notification email sent via SendGrid');
+                console.log('✓ Contact notification email sent via SendGrid');
+                console.log(`  From: ${sendgridFromEmail}`);
+                console.log(`  To: admissions@kns.edu.sl`);
             })
             .catch((emailError) => {
-                console.error('Error sending contact email via SendGrid:', emailError);
+                console.error('✗ Error sending contact email via SendGrid');
+                console.error(`  Status Code: ${emailError.code || emailError.response?.statusCode || 'Unknown'}`);
+                console.error(`  From Email: ${sendgridFromEmail}`);
+                
+                if (emailError.response?.body?.errors) {
+                    emailError.response.body.errors.forEach((err, index) => {
+                        console.error(`  Error ${index + 1}:`, err.message || err);
+                    });
+                }
+                
+                if (emailError.code === 403 || emailError.response?.statusCode === 403) {
+                    console.error('  ⚠️  Sender email may not be verified in SendGrid. Run: node setup-sender.js');
+                }
             });
     }
     
@@ -640,10 +691,24 @@ Submitted At: ${new Date().toISOString()}
         sgMail
             .send(msg)
             .then(() => {
-                console.log('Enquiry notification email sent via SendGrid');
+                console.log('✓ Enquiry notification email sent via SendGrid');
+                console.log(`  From: ${sendgridFromEmail}`);
+                console.log(`  To: enquiry@kns.edu.sl`);
             })
             .catch((emailError) => {
-                console.error('Error sending enquiry email via SendGrid:', emailError);
+                console.error('✗ Error sending enquiry email via SendGrid');
+                console.error(`  Status Code: ${emailError.code || emailError.response?.statusCode || 'Unknown'}`);
+                console.error(`  From Email: ${sendgridFromEmail}`);
+                
+                if (emailError.response?.body?.errors) {
+                    emailError.response.body.errors.forEach((err, index) => {
+                        console.error(`  Error ${index + 1}:`, err.message || err);
+                    });
+                }
+                
+                if (emailError.code === 403 || emailError.response?.statusCode === 403) {
+                    console.error('  ⚠️  Sender email may not be verified in SendGrid. Run: node setup-sender.js');
+                }
             });
     }
     
@@ -883,13 +948,7 @@ app.get('/api/payments', async (req, res) => {
 
 app.get('/api/scholarships', async (req, res) => {
     try {
-        console.log('=== Scholarships API Request ===');
-        console.log(`[${new Date().toISOString()}] GET /api/scholarships`);
-        console.log(`  Origin: ${req.headers.origin || 'none'}`);
-        console.log(`  Referer: ${req.headers.referer || 'none'}`);
-        console.log('Fetching scholarships from Supabase...');
-        
-        // Try to fetch active scholarships first
+        // Fetch active scholarships
         let query = supabase
             .from('scholarships')
             .select('*')
@@ -898,39 +957,18 @@ app.get('/api/scholarships', async (req, res) => {
         
         const { data, error } = await query;
         
-        console.log('Supabase query completed');
-        console.log(`  Data: ${data ? data.length : 0} records`);
-        console.log(`  Error: ${error ? 'Yes' : 'No'}`);
-        
         if (error) {
-            console.error('Error fetching scholarships:', error);
-            console.error('Error code:', error.code);
-            console.error('Error message:', error.message);
-            console.error('Error details:', error.details);
-            console.error('Error hint:', error.hint);
+            console.error('Error fetching scholarships:', error.code, error.message);
             
             // Handle specific error cases
-            if (error.code === 'PGRST116') {
-                // Table doesn't exist
-                console.error('Scholarships table does not exist in Supabase');
+            if (error.code === 'PGRST116' || error.code === '42P01') {
                 return res.status(500).json({ 
                     error: 'Scholarships table not found',
                     details: 'The scholarships table does not exist in the database. Please create it in Supabase.'
                 });
             }
             
-            if (error.code === '42P01') {
-                // Relation does not exist (PostgreSQL error)
-                console.error('Scholarships table does not exist');
-                return res.status(500).json({ 
-                    error: 'Scholarships table not found',
-                    details: 'The scholarships table does not exist in the database.'
-                });
-            }
-            
-            // Check for RLS/permission errors
             if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
-                console.error('Row Level Security (RLS) is blocking access');
                 return res.status(500).json({ 
                     error: 'Permission denied',
                     details: 'Row Level Security (RLS) policies are blocking access to scholarships. Please create a public SELECT policy in Supabase.'
@@ -944,29 +982,6 @@ app.get('/api/scholarships', async (req, res) => {
             });
         }
         
-        // If no active scholarships found, try to get all scholarships to debug
-        if (!data || data.length === 0) {
-            console.log('No active scholarships found. Checking all scholarships...');
-            const { data: allData, error: allError } = await supabase
-                .from('scholarships')
-                .select('id, title, is_active')
-                .limit(5);
-            
-            if (!allError && allData && allData.length > 0) {
-                console.log('Found scholarships in database:', allData);
-                console.log('Note: No scholarships have is_active = true. Returning empty array.');
-                console.log('TIP: Set is_active = true for scholarships you want to display.');
-            } else if (allError) {
-                console.error('Error checking all scholarships:', allError);
-            } else {
-                console.log('No scholarships found in database at all.');
-                console.log('TIP: Add scholarships to the Supabase scholarships table.');
-            }
-        }
-        
-        console.log(`Successfully fetched ${data ? data.length : 0} active scholarships`);
-        console.log('=== End Scholarships API Request ===\n');
-        
         // Return response with helpful message if no scholarships
         if (!data || data.length === 0) {
             return res.json({ 
@@ -978,9 +993,7 @@ app.get('/api/scholarships', async (req, res) => {
         
         res.json({ success: true, scholarships: data || [] });
     } catch (error) {
-        console.error('Unexpected error fetching scholarships:', error);
-        console.error('Error stack:', error.stack);
-        console.error('=== End Scholarships API Request (ERROR) ===\n');
+        console.error('Unexpected error fetching scholarships:', error.message);
         res.status(500).json({ 
             error: 'Failed to fetch scholarships',
             details: error.message || 'Unexpected server error'
@@ -1028,8 +1041,6 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
     }
     
     try {
-        console.log(`[Download Request] Scholarship ID: ${id}, Type: ${type}`);
-        
         const { data, error } = await supabase
             .from('scholarships')
             .select('*')
@@ -1037,22 +1048,14 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
             .eq('is_active', true)
             .single();
         
-        if (error) {
-            console.error(`[Download Error] Database error:`, error);
-            return res.status(404).json({ error: 'Scholarship not found', details: error.message });
-        }
-        
-        if (!data) {
-            console.error(`[Download Error] Scholarship not found: ${id}`);
-            return res.status(404).json({ error: 'Scholarship not found' });
+        if (error || !data) {
+            console.error(`Download error: Scholarship ${id} not found`);
+            return res.status(404).json({ error: 'Scholarship not found', details: error?.message });
         }
         
         const filePath = type === 'guide' ? data.guide_path : data.form_path;
         
-        console.log(`[Download] File path from database: ${filePath}`);
-        
         if (!filePath || filePath === '#' || filePath.trim() === '') {
-            console.error(`[Download Error] No file path for ${type}`);
             return res.status(404).json({ 
                 error: `${type === 'guide' ? 'Guide' : 'Form'} file not available for this scholarship.`,
                 message: 'The file path is not set in the database.'
@@ -1063,7 +1066,6 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
         
         // If it's a full URL, proxy the file or redirect
         if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
-            console.log(`[Download] External URL detected: ${trimmedPath}`);
             
             // For external URLs, we can either redirect or proxy
             // Redirect is simpler but may have CORS issues
@@ -1078,7 +1080,6 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
                 
                 protocol.get(trimmedPath, (fileResponse) => {
                     if (fileResponse.statusCode !== 200) {
-                        console.error(`[Download Error] Failed to fetch external file: ${fileResponse.statusCode}`);
                         return res.status(fileResponse.statusCode).json({ 
                             error: 'Failed to fetch file from external source',
                             statusCode: fileResponse.statusCode
@@ -1095,11 +1096,10 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
                     
                     fileResponse.pipe(res);
                 }).on('error', (err) => {
-                    console.error(`[Download Error] Error fetching external file:`, err);
+                    console.error('Error fetching external file:', err.message);
                     res.status(500).json({ error: 'Failed to fetch file from external source', details: err.message });
                 });
             } catch (proxyError) {
-                console.error(`[Download Error] Proxy error:`, proxyError);
                 // Fallback to redirect
                 return res.redirect(trimmedPath);
             }
@@ -1114,14 +1114,8 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
         let cleanPath = trimmedPath.replace(/^\/+/, '').replace(/^scholarships\//, '');
         const fullPath = path.join(__dirname, 'scholarships', cleanPath);
         
-        console.log(`[Download] Attempting to serve file from: ${fullPath}`);
-        
         // Check if file exists
         if (!fs.existsSync(fullPath)) {
-            console.error(`[Download Error] File not found: ${fullPath}`);
-            console.error(`[Download Error] Current directory: ${__dirname}`);
-            console.error(`[Download Error] Scholarships directory exists: ${fs.existsSync(path.join(__dirname, 'scholarships'))}`);
-            
             return res.status(404).json({ 
                 error: 'File not found',
                 path: fullPath,
@@ -1146,20 +1140,17 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${path.basename(fullPath)}"`);
         res.setHeader('Access-Control-Allow-Origin', '*');
         
-        console.log(`[Download] Sending file: ${fullPath}`);
         res.sendFile(fullPath, (err) => {
             if (err) {
-                console.error(`[Download Error] Error sending file:`, err);
+                console.error('Error sending file:', err.message);
                 if (!res.headersSent) {
                     res.status(500).json({ error: 'Failed to send file', details: err.message });
                 }
-            } else {
-                console.log(`[Download] File sent successfully: ${fullPath}`);
             }
         });
         
     } catch (error) {
-        console.error('[Download Error] Unexpected error:', error);
+        console.error('Download error:', error.message);
         if (!res.headersSent) {
             res.status(500).json({ error: 'Failed to serve file', details: error.message });
         }
@@ -1224,6 +1215,297 @@ app.get('/api/scholarships/:id/files/check', async (req, res) => {
     }
 });
 
+// Save scholarship application form submission (no file uploads - documents submitted in person)
+app.post('/api/scholarship-applications', async (req, res) => {
+    try {
+        // Extract form fields from JSON body
+        const {
+            scholarship_id,
+            surname,
+            first_name,
+            other_names,
+            gender,
+            date_of_birth,
+            nationality,
+            national_id,
+            address,
+            city,
+            phone,
+            email,
+            highest_qualification,
+            school_institution,
+            year_of_completion,
+            credits,
+            programme,
+            scholarship_type,
+            previous_application,
+            previous_application_details,
+            personal_statement,
+            declaration
+        } = req.body;
+        
+        // Validate required fields
+        if (!surname || !first_name || !gender || !date_of_birth || !nationality || !national_id ||
+            !address || !city || !phone || !email || !highest_qualification || !school_institution ||
+            !year_of_completion || !programme || !scholarship_type || !previous_application ||
+            !personal_statement || declaration !== 'on') {
+            return res.status(400).json({ 
+                error: 'Missing required fields. Please ensure all required fields are completed.' 
+            });
+        }
+        
+        // Validate personal statement word count (minimum 300 words)
+        const statementWords = personal_statement.trim().split(/\s+/).filter(word => word.length > 0);
+        if (statementWords.length < 300) {
+            return res.status(400).json({ 
+                error: `Personal statement must be at least 300 words. Currently: ${statementWords.length} words.` 
+            });
+        }
+        
+        const ipAddress = getClientIp(req);
+        const userAgent = getUserAgent(req);
+        
+        // Insert application into database
+        const { data, error } = await supabase
+            .from('scholarship_applications')
+            .insert([
+                {
+                    scholarship_id: scholarship_id || null,
+                    surname: surname,
+                    first_name: first_name,
+                    other_names: other_names || null,
+                    gender: gender,
+                    date_of_birth: date_of_birth,
+                    nationality: nationality,
+                    national_id: national_id,
+                    address: address,
+                    city: city,
+                    phone: phone,
+                    email: email,
+                    highest_qualification: highest_qualification,
+                    school_institution: school_institution,
+                    year_of_completion: parseInt(year_of_completion),
+                    credits: credits || null,
+                    programme: programme,
+                    scholarship_type: scholarship_type,
+                    previous_application: previous_application,
+                    previous_application_details: previous_application === 'Yes' ? previous_application_details : null,
+                    personal_statement: personal_statement,
+                    documents_submitted_in_person: true,
+                    ip_address: ipAddress,
+                    user_agent: userAgent
+                }
+            ])
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Error saving scholarship application:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+            console.error('Error details:', error.details);
+            console.error('Error hint:', error.hint);
+            return res.status(500).json({ 
+                error: 'Failed to save scholarship application',
+                details: error.message || 'Unknown database error',
+                code: error.code,
+                hint: error.hint || null,
+                fullError: process.env.NODE_ENV === 'development' ? error : undefined
+            });
+        }
+        
+        // Attempt to send email notification via SendGrid (non-blocking)
+        if (sendgridApiKey && sendgridFromEmail && sendgridToEmail) {
+            const subjectLine = `New Scholarship Application: ${programme} - ${first_name} ${surname}`;
+            
+            const textBody = `
+New scholarship application from KNS College website
+
+Personal Information:
+Name: ${surname}, ${first_name} ${other_names || ''}
+Gender: ${gender}
+Date of Birth: ${date_of_birth}
+Nationality: ${nationality}
+National ID/Passport: ${national_id}
+
+Contact Information:
+Address: ${address}
+City: ${city}
+Phone: ${phone}
+Email: ${email}
+
+Academic Background:
+Highest Qualification: ${highest_qualification}
+School/Institution: ${school_institution}
+Year of Completion: ${year_of_completion}
+Credits: ${credits || 'N/A'}
+
+Programme & Scholarship:
+Programme: ${programme}
+Scholarship Type: ${scholarship_type}
+Previous Application: ${previous_application}
+${previous_application === 'Yes' && previous_application_details ? `Previous Application Details: ${previous_application_details}` : ''}
+
+Personal Statement:
+${personal_statement.substring(0, 500)}${personal_statement.length > 500 ? '...' : ''}
+
+Note: Supporting documents must be submitted in person at the KNS College office.
+Required documents:
+- Academic Certificate(s) or Result Slip
+- Valid National ID or Passport (clear copy)
+- Passport-size Photograph
+- Curriculum Vitae (CV)
+- Recommendation Letter (Optional but Advantageous)
+
+Office Location: 18 Dundas Street, Freetown, Sierra Leone
+Contact: +232 79 422 442 | admissions@kns.edu.sl
+
+IP Address: ${ipAddress}
+User Agent: ${userAgent}
+Submitted At: ${new Date().toISOString()}
+`.trim();
+            
+            const htmlBody = `
+                <h2>New scholarship application from KNS College website</h2>
+                <h3>Personal Information</h3>
+                <p><strong>Name:</strong> ${surname}, ${first_name} ${other_names || ''}</p>
+                <p><strong>Gender:</strong> ${gender}</p>
+                <p><strong>Date of Birth:</strong> ${date_of_birth}</p>
+                <p><strong>Nationality:</strong> ${nationality}</p>
+                <p><strong>National ID/Passport:</strong> ${national_id}</p>
+                
+                <h3>Contact Information</h3>
+                <p><strong>Address:</strong> ${address}</p>
+                <p><strong>City:</strong> ${city}</p>
+                <p><strong>Phone:</strong> ${phone}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                
+                <h3>Academic Background</h3>
+                <p><strong>Highest Qualification:</strong> ${highest_qualification}</p>
+                <p><strong>School/Institution:</strong> ${school_institution}</p>
+                <p><strong>Year of Completion:</strong> ${year_of_completion}</p>
+                <p><strong>Credits:</strong> ${credits || 'N/A'}</p>
+                
+                <h3>Programme & Scholarship</h3>
+                <p><strong>Programme:</strong> ${programme}</p>
+                <p><strong>Scholarship Type:</strong> ${scholarship_type}</p>
+                <p><strong>Previous Application:</strong> ${previous_application}</p>
+                ${previous_application === 'Yes' && previous_application_details ? `<p><strong>Previous Application Details:</strong> ${previous_application_details}</p>` : ''}
+                
+                <h3>Personal Statement</h3>
+                <p>${personal_statement.split('\n').map(line => line.trim()).join('<br>')}</p>
+                
+                <h3>Supporting Documents</h3>
+                <p><strong>Note:</strong> Supporting documents must be submitted in person at the KNS College office.</p>
+                <p><strong>Required documents:</strong></p>
+                <ul>
+                    <li>Academic Certificate(s) or Result Slip</li>
+                    <li>Valid National ID or Passport (clear copy)</li>
+                    <li>Passport-size Photograph</li>
+                    <li>Curriculum Vitae (CV)</li>
+                    <li>Recommendation Letter (Optional but Advantageous)</li>
+                </ul>
+                <p><strong>Office Location:</strong> 18 Dundas Street, Freetown, Sierra Leone<br>
+                <strong>Contact:</strong> +232 79 422 442 | admissions@kns.edu.sl</p>
+                
+                <hr>
+                <p><strong>IP Address:</strong> ${ipAddress}</p>
+                <p><strong>User Agent:</strong> ${userAgent}</p>
+                <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
+            `;
+            
+            const msg = {
+                to: 'scholarships@kns.edu.sl',
+                from: sendgridFromEmail,
+                subject: subjectLine,
+                text: textBody,
+                html: htmlBody,
+            };
+            
+            sgMail
+                .send(msg)
+                .then(() => {
+                    console.log('✓ Scholarship application notification email sent via SendGrid');
+                    console.log(`  From: ${sendgridFromEmail}`);
+                    console.log(`  To: scholarships@kns.edu.sl`);
+                })
+                .catch((emailError) => {
+                    console.error('✗ Error sending scholarship application email via SendGrid');
+                    console.error(`  Status Code: ${emailError.code || emailError.response?.statusCode || 'Unknown'}`);
+                    console.error(`  From Email: ${sendgridFromEmail}`);
+                    console.error(`  To Email: scholarships@kns.edu.sl`);
+                    
+                    // Log detailed error information
+                    if (emailError.response) {
+                        console.error(`  Response Body:`, JSON.stringify(emailError.response.body, null, 2));
+                        if (emailError.response.body?.errors) {
+                            emailError.response.body.errors.forEach((err, index) => {
+                                console.error(`  Error ${index + 1}:`, err.message || err);
+                            });
+                        }
+                    }
+                    
+                    // Provide specific guidance for common errors
+                    if (emailError.code === 403 || emailError.response?.statusCode === 403) {
+                        console.error('\n  🔧 Troubleshooting 403 Forbidden Error:');
+                        console.error('    1. Verify the sender email is verified in SendGrid:');
+                        console.error(`       - Go to SendGrid Dashboard > Settings > Sender Authentication`);
+                        console.error(`       - Verify that "${sendgridFromEmail}" is verified`);
+                        console.error(`    2. Run the setup script to verify sender: node setup-sender.js`);
+                        console.error('    3. Check API key permissions (needs "Mail Send" permission)');
+                        console.error('    4. For domain-based sending, ensure domain is authenticated\n');
+                    } else if (emailError.code === 401 || emailError.response?.statusCode === 401) {
+                        console.error('\n  🔧 Troubleshooting 401 Unauthorized Error:');
+                        console.error('    1. Check that SENDGRID_API_KEY is correct');
+                        console.error('    2. Verify the API key is active in SendGrid Dashboard\n');
+                    } else {
+                        console.error(`  Full Error:`, emailError.message || emailError);
+                    }
+                });
+        }
+        
+        res.json({ 
+            success: true, 
+            applicationId: data.id,
+            message: 'Scholarship application submitted successfully' 
+        });
+    } catch (error) {
+        console.error('Error processing scholarship application:', error);
+        res.status(500).json({ 
+            error: 'Failed to process scholarship application',
+            details: error.message || 'Unknown server error'
+        });
+    }
+});
+
+// Get all scholarship applications (for admin - you may want to add authentication)
+app.get('/api/scholarship-applications', async (req, res) => {
+    const { scholarship_id, status } = req.query;
+    
+    let query = supabase
+        .from('scholarship_applications')
+        .select('*');
+    
+    if (scholarship_id) {
+        query = query.eq('scholarship_id', scholarship_id);
+    }
+    
+    if (status) {
+        query = query.eq('status', status);
+    }
+    
+    query = query.order('timestamp', { ascending: false });
+    
+    const { data, error } = await query;
+    
+    if (error) {
+        console.error('Error fetching scholarship applications:', error);
+        return res.status(500).json({ error: 'Failed to fetch scholarship applications' });
+    }
+    
+    res.json({ success: true, applications: data || [] });
+});
+
 // Get statistics (for admin dashboard)
 app.get('/api/stats', async (req, res) => {
     try {
@@ -1265,18 +1547,7 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-// Debug middleware to log ALL API requests (before static files)
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api/')) {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-        console.log(`  Origin: ${req.headers.origin || 'none'}`);
-        console.log(`  Referer: ${req.headers.referer || 'none'}`);
-        console.log(`  User-Agent: ${req.headers['user-agent']?.substring(0, 50) || 'none'}...`);
-    }
-    next();
-});
-
-// Catch-all handler for unmatched API routes (for debugging)
+// Catch-all handler for unmatched API routes
 app.use('/api/*', (req, res) => {
     console.error(`[${new Date().toISOString()}] UNMATCHED API ROUTE: ${req.method} ${req.path}`);
     console.error(`  Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`);
@@ -1304,6 +1575,8 @@ app.use('/api/*', (req, res) => {
             'POST /api/payments',
             'PATCH /api/payments/:paymentId',
             'GET /api/payments',
+            'POST /api/scholarship-applications',
+            'GET /api/scholarship-applications',
             'GET /api/stats'
         ]
     });

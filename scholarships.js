@@ -161,6 +161,38 @@ async function loadScholarships(scholarshipsGrid) {
     }
 }
 
+function removePercentagesFromText(text) {
+    if (!text) return text;
+    
+    let cleaned = text;
+    
+    // Replace specific patterns first (most specific to least specific)
+    cleaned = cleaned
+        // Handle "Fully funded and 60% discount on tuition fees"
+        .replace(/Fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
+        .replace(/fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
+        // Handle "60% discount on tuition fees"
+        .replace(/\d+% discount on tuition fees/gi, 'partial funding on tuition fees')
+        // Handle "100% of tuition fees" or "100% tuition fee coverage"
+        .replace(/100%\s*(of tuition fees|tuition fee coverage|coverage)/gi, 'fully funded')
+        // Handle "60% tuition fee discount" or "Minimum 60% tuition fee discount"
+        .replace(/(Minimum\s+)?\d+% tuition fee discount/gi, 'partial funding')
+        // Handle "Covers 100% of tuition fees"
+        .replace(/Covers \d+% of tuition fees/gi, 'Fully funded')
+        // Handle any remaining percentage with "discount"
+        .replace(/\d+%\s*discount/gi, 'partial funding')
+        // Handle any remaining percentage with "coverage"
+        .replace(/\d+%\s*coverage/gi, 'fully funded')
+        // Remove standalone percentages (like "60%" or "100%")
+        .replace(/\b\d+%\b/g, '')
+        // Clean up extra spaces
+        .replace(/\s+/g, ' ')
+        .replace(/\s+and\s+/gi, ' and ')
+        .trim();
+    
+    return cleaned;
+}
+
 function createScholarshipCard(scholarship) {
     const card = document.createElement('div');
     card.className = 'scholarship-card';
@@ -174,13 +206,16 @@ function createScholarshipCard(scholarship) {
         minute: '2-digit'
     });
     
+    // Process award summary to remove percentages
+    const cleanedAwardSummary = removePercentagesFromText(scholarship.award_summary);
+    
     card.innerHTML = `
         <div class="scholarship-card-header">
             <h3 class="scholarship-card-title">${escapeHtml(scholarship.title)}</h3>
         </div>
         <div class="scholarship-card-body">
             <div class="scholarship-award-summary">
-                <p class="award-amount">${escapeHtml(scholarship.award_summary)}</p>
+                <p class="award-amount">${escapeHtml(cleanedAwardSummary)}</p>
             </div>
             <div class="scholarship-deadline">
                 <strong>Deadline:</strong> ${formattedDeadline}

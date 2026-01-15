@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholarship Application - KNS College</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top Header Navigation -->
+    <header class="top-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <a href="index.html" class="logo">
+                        <img src="images/kns-college-logo.png" alt="KNS College Logo" class="logo-image">
+                        <div class="logo-text-container">
+                            <span class="logo-text">Knowledge</span>
+                            <span class="logo-text">Network</span>
+                            <span class="logo-text">Solutions</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-menu">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li class="has-dropdown">
+                            <a href="Programmes.html">Programmes <span class="dropdown-arrow">▼</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="Programmes.html#train-certify">Train and Certify Courses</a></li>
+                                <li><a href="Programmes.html#diploma">Diploma Programmes</a></li>
+                                <li><a href="Programmes.html#certificate">Certificate Programmes</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="corporate-training.html">Corporate Training</a></li>
+                        <li><a href="certifications.html">Certifications</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="scholarships.html" class="active">Scholarships</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content-full">
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Scholarship Application Form</h1>
+                <p class="page-subtitle">Apply for the KNS College Scholarship Programme 2026</p>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="container">
+                <div class="content-wrapper">
+                    <div class="content-main">
+                        <div class="alert-box alert-info" style="margin-bottom: var(--spacing-lg);">
+                            <strong>Application Deadline:</strong> 22 January 2026<br>
+                            <strong>Scholarship Programme Year:</strong> 2026<br>
+                            Please ensure all required fields are completed before submitting. All supporting documents must be submitted in person at the office.
+                        </div>
+
+                        <form id="scholarshipApplicationForm" class="application-form">
+                            <!-- Step 1: Personal Information -->
+                            <div class="form-section">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 1: Personal Information</h2>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="surname">Surname <span class="required">*</span></label>
+                                        <input type="text" id="surname" name="surname" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="first_name">First Name <span class="required">*</span></label>
+                                        <input type="text" id="first_name" name="first_name" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="other_names">Other Names</label>
+                                    <input type="text" id="other_names" name="other_names">
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="gender">Gender <span class="required">*</span></label>
+                                        <select id="gender" name="gender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="date_of_birth">Date of Birth <span class="required">*</span></label>
+                                        <input type="date" id="date_of_birth" name="date_of_birth" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="nationality">Nationality <span class="required">*</span></label>
+                                        <input type="text" id="nationality" name="nationality" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="national_id">National ID or Passport Number <span class="required">*</span></label>
+                                        <input type="text" id="national_id" name="national_id" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Contact Information -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 2: Contact Information</h2>
+                                
+                                <div class="form-group">
+                                    <label for="address">Residential Address <span class="required">*</span></label>
+                                    <textarea id="address" name="address" rows="3" required></textarea>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="city">City/Town <span class="required">*</span></label>
+                                        <input type="text" id="city" name="city" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="phone">Telephone Number <span class="required">*</span></label>
+                                        <input type="tel" id="phone" name="phone" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="email">Email Address <span class="required">*</span></label>
+                                    <input type="email" id="email" name="email" required>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Academic Background -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 3: Academic Background</h2>
+                                
+                                <div class="form-group">
+                                    <label for="highest_qualification">Highest Academic Qualification <span class="required">*</span></label>
+                                    <select id="highest_qualification" name="highest_qualification" required>
+                                        <option value="">Select Qualification</option>
+                                        <option value="WASSCE">WASSCE</option>
+                                        <option value="Certificate">Certificate</option>
+                                        <option value="Diploma">Diploma</option>
+                                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="school_institution">Name of School/Institution <span class="required">*</span></label>
+                                    <input type="text" id="school_institution" name="school_institution" required>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="year_of_completion">Year of Completion <span class="required">*</span></label>
+                                        <input type="number" id="year_of_completion" name="year_of_completion" min="1950" max="2025" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="credits">Number of Credits (if available)</label>
+                                        <input type="text" id="credits" name="credits" placeholder="e.g., 5 credits">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Programme Selection -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 4: Programme Selection</h2>
+                                
+                                <div class="form-group">
+                                    <label for="programme">Preferred Diploma Programme <span class="required">*</span></label>
+                                    <select id="programme" name="programme" required>
+                                        <option value="">Select a Programme</option>
+                                        <option value="Cybersecurity">Cybersecurity</option>
+                                        <option value="Telecommunications">Telecommunications</option>
+                                        <option value="Project Management">Project Management</option>
+                                        <option value="Entrepreneurship & Small Business">Entrepreneurship & Small Business</option>
+                                        <option value="Applied Computerized Accounting (QuickBooks)">Applied Computerized Accounting (QuickBooks)</option>
+                                        <option value="IT with Business Management">IT with Business Management</option>
+                                        <option value="Computing & Networking">Computing & Networking</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Step 5: Scholarship Type Selection -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 5: Scholarship Type Selection</h2>
+                                
+                                    <div class="form-group">
+                                        <label for="scholarship_type">Scholarship Type <span class="required">*</span></label>
+                                        <select id="scholarship_type" name="scholarship_type" required>
+                                            <option value="">Select Scholarship Type</option>
+                                            <option value="Full Scholarship">Full Scholarship (Fully Funded)</option>
+                                            <option value="Partial Scholarship">Partial Scholarship (Partial Funding)</option>
+                                        </select>
+                                    </div>
+                                
+                                <div class="form-group">
+                                    <label for="previous_application">Have you applied for any KNS College scholarship before? <span class="required">*</span></label>
+                                    <select id="previous_application" name="previous_application" required>
+                                        <option value="">Select an option</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group" id="previous_application_details_group" style="display: none;">
+                                    <label for="previous_application_details">Please provide details of your previous application</label>
+                                    <textarea id="previous_application_details" name="previous_application_details" rows="3"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Step 6: Personal Statement -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 6: Personal Statement (Mandatory)</h2>
+                                <p class="form-help-text">
+                                    Please write a personal statement of not less than 300 words explaining:
+                                </p>
+                                <ul class="content-list" style="margin-bottom: var(--spacing-md);">
+                                    <li>Why you are applying for the KNS College Scholarship</li>
+                                    <li>How the selected programme will affect your career and future goals</li>
+                                    <li>Why you should be considered for the scholarship</li>
+                                </ul>
+                                
+                                <div class="form-group">
+                                    <label for="personal_statement">Personal Statement <span class="required">*</span></label>
+                                    <textarea id="personal_statement" name="personal_statement" rows="10" required minlength="300"></textarea>
+                                    <p class="form-help-text">
+                                        <span id="word_count">0</span> words (minimum 300 words required)
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Step 7: Supporting Documents -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 7: Supporting Documents</h2>
+                                
+                                <div class="alert-box alert-info" style="margin-bottom: var(--spacing-md);">
+                                    <strong>Important:</strong> All supporting documents must be submitted in person at the KNS College office.
+                                </div>
+                                
+                                <p class="form-help-text" style="margin-bottom: var(--spacing-md);">
+                                    <strong>Required Documents:</strong> Please bring the following documents to the office when submitting your application:
+                                </p>
+                                
+                                <ul class="content-list" style="margin-bottom: var(--spacing-md);">
+                                    <li>Academic Certificate(s) or Result Slip</li>
+                                    <li>Valid National ID or Passport (clear copy)</li>
+                                    <li>Passport-size Photograph</li>
+                                    <li>Curriculum Vitae (CV)</li>
+                                    <li>Recommendation Letter (Optional but Advantageous)</li>
+                                </ul>
+                                
+                                <div class="alert-box" style="background-color: #f0f7ff; border-left: 4px solid #0066cc; padding: var(--spacing-md); margin-top: var(--spacing-md);">
+                                    <p style="margin: 0;"><strong>Office Location:</strong><br>
+                                    18 Dundas Street, Freetown, Sierra Leone<br>
+                                    <strong>Contact:</strong> +232 79 422 442 | admissions@kns.edu.sl</p>
+                                </div>
+                            </div>
+
+                            <!-- Step 8: Declaration -->
+                            <div class="form-section" style="margin-top: var(--spacing-xl);">
+                                <h2 class="content-heading" style="margin-bottom: var(--spacing-md);">Step 8: Declaration</h2>
+                                
+                                <div class="form-group">
+                                    <label for="declaration" style="display: flex; align-items: flex-start; cursor: pointer; gap: 10px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; background-color: #fafafa;">
+                                        <input type="checkbox" id="declaration" name="declaration" required value="yes" style="margin-top: 3px; cursor: pointer; width: 20px; height: 20px; min-width: 20px; min-height: 20px; flex-shrink: 0; appearance: checkbox; -webkit-appearance: checkbox; -moz-appearance: checkbox;">
+                                        <span style="flex: 1; line-height: 1.5;">
+                                            I hereby declare that all information provided in this application is true, accurate, and complete. 
+                                            I understand that providing false information may result in disqualification from the scholarship programme. 
+                                            <span class="required">*</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Scholarship ID (hidden field) -->
+                            <input type="hidden" id="scholarship_id" name="scholarship_id">
+
+                            <!-- Submit Button -->
+                            <div class="form-group" style="margin-top: var(--spacing-xl);">
+                                <button type="submit" class="btn btn-primary submit-btn" style="width: 100%;">
+                                    Submit Application
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <aside class="content-sidebar">
+                        <div class="sidebar-box">
+                            <h3 class="sidebar-box-title">Application Tips</h3>
+                            <ul class="sidebar-links">
+                                <li>Ensure all required fields are completed</li>
+                                <li>Personal statement must be at least 300 words</li>
+                                <li>Review your application before submitting</li>
+                                <li>Submit before the deadline: 22 January 2026</li>
+                                <li>Bring all supporting documents to the office</li>
+                            </ul>
+                        </div>
+                        <div class="sidebar-box">
+                            <h3 class="sidebar-box-title">Need Help?</h3>
+                            <p class="sidebar-text">
+                                <strong>Admissions Office</strong><br>
+                                Email: admissions@kns.edu.sl<br>
+                                Tel: +232 79 442 442 | +232 75 442 442<br>
+                                Location: 18 Dundas Street, Freetown
+                            </p>
+                            <a href="contact.html" class="btn btn-outline btn-block">Contact Us</a>
+                        </div>
+                        <div class="sidebar-box">
+                            <h3 class="sidebar-box-title">Quick Links</h3>
+                            <ul class="sidebar-links">
+                                <li><a href="scholarships.html">All Scholarships</a></li>
+                                <li><a href="scholarship-detail.html">Scholarship Details</a></li>
+                                <li><a href="admissions.html">Admissions</a></li>
+                                <li><a href="Programmes.html">Programmes</a></li>
+                            </ul>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="footer-title">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="Programmes.html">Programmes</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="scholarships.html">Scholarships</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Campus Location</h4>
+                    <ul class="footer-links">
+                        <li>18 Dundas Street</li>
+                        <li>Freetown, Sierra Leone</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://kns.fedena.com/user/dashboard">Student Portal</a></li>
+                        <li><a href="https://kns.fedena.com/library">Library</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Contact</h4>
+                    <ul class="footer-links">
+                        <li>Email: admissions@kns.edu.sl</li>
+                        <li>General Enquiries: training@kns.edu.sl</li>
+                        <li>Tel / WhatsApp: +232 79 422 442</li>
+                        <li>Location: Freetown, Sierra Leone</li>
+                        <li>Website: www.kns.edu.sl</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <span class="separator">|</span>
+                    <a href="#">Terms of Service</a>
+                    <span class="separator">|</span>
+                    <a href="#">Accessibility</a>
+                </div>
+                <p class="copyright">&copy; 2025 KNS College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chatbot Widget -->
+    <div class="chatbot-container">
+        <!-- WhatsApp Support Button -->
+        <a href="https://wa.me/23279422442?text=Hello!%20I%20need%20help%20with%20KNS%20College." 
+           target="_blank" 
+           id="whatsappSupportBtn" 
+           aria-label="Contact us on WhatsApp"
+           title="Chat with us on WhatsApp">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+        </a>
+        
+        <!-- Chatbot Toggle Button -->
+        <button id="chatbotToggle" aria-label="Open chatbot" title="Chat with us">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+        </button>
+        
+        <!-- Chatbot Widget -->
+        <div id="chatbotWidget">
+            <div class="chatbot-header">
+                <div class="chatbot-header-info">
+                    <span class="chatbot-status"></span>
+                    <h3>KNS College Support</h3>
+                </div>
+                <div class="chatbot-header-actions">
+                    <button id="chatbotMinimize" aria-label="Minimize chatbot" title="Minimize">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button id="chatbotClose" aria-label="Close chatbot" title="Close and start new conversation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chatbot-input-area">
+                <input type="text" id="chatInput" placeholder="Type your message..." autocomplete="off">
+                <button id="chatSendBtn" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+    <script src="chatbot.js"></script>
+    <script src="scholarship-application-handler.js"></script>
+</body>
+</html>
