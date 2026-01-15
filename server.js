@@ -86,7 +86,7 @@ if (!sendgridApiKey) {
                 console.warn(`  ⚠️  Warning: SENDGRID_FROM_EMAIL was set to "${envFromEmail}" but using verified sender "${verifiedSenderEmail}" instead.`);
             }
             console.log(`  Default To Email: ${sendgridToEmail}`);
-            console.log(`  Scholarship Applications To: ${process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'scholarships@kns.edu.sl'}`);
+            console.log(`  Scholarship Applications To: ${process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'knscollegesle@gmail.com'}`);
             console.log(`  Contact Forms To: ${process.env.SENDGRID_CONTACT_EMAIL || 'admissions@kns.edu.sl'}`);
             console.log(`  Enquiry Forms To: ${process.env.SENDGRID_ENQUIRY_EMAIL || 'enquiry@kns.edu.sl'}`);
             console.log(`  API Key: ✓ Set (length: ${sendgridApiKey.length} characters)\n`);
@@ -313,7 +313,7 @@ app.get('/api/health', (req, res) => {
 // Test email endpoint (for debugging email delivery)
 app.post('/api/test-email', async (req, res) => {
     const { to } = req.body;
-    const testRecipient = to || process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'scholarships@kns.edu.sl';
+    const testRecipient = to || process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'knscollegesle@gmail.com';
     
     if (!sendgridApiKey || !sendgridFromEmail) {
         return res.status(500).json({ 
@@ -706,6 +706,7 @@ Submitted At: ${new Date().toISOString()}
                 console.log(`  From: ${sendgridFromEmail}`);
                 console.log(`  To: ${contactRecipientEmail}`);
                 console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
+                console.log(`  ⚠️  Note: SendGrid accepted the email (202), but delivery depends on recipient mail server.`);
             })
             .catch((emailError) => {
                 console.error('✗ Error sending contact email via SendGrid');
@@ -720,6 +721,9 @@ Submitted At: ${new Date().toISOString()}
                 
                 if (emailError.code === 403 || emailError.response?.statusCode === 403) {
                     console.error('  ⚠️  Sender email may not be verified in SendGrid. Run: node setup-sender.js');
+                } else {
+                    console.error('\n  ⚠️  If SendGrid accepts emails (202) but they show "Deferred" in Activity:');
+                    console.error('     Check recipient mail server connectivity (see scholarship application handler for details)');
                 }
             });
     }
@@ -848,6 +852,7 @@ Submitted At: ${new Date().toISOString()}
                 console.log(`  From: ${sendgridFromEmail}`);
                 console.log(`  To: ${enquiryRecipientEmail}`);
                 console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
+                console.log(`  ⚠️  Note: SendGrid accepted the email (202), but delivery depends on recipient mail server.`);
             })
             .catch((emailError) => {
                 console.error('✗ Error sending enquiry email via SendGrid');
@@ -862,6 +867,9 @@ Submitted At: ${new Date().toISOString()}
                 
                 if (emailError.code === 403 || emailError.response?.statusCode === 403) {
                     console.error('  ⚠️  Sender email may not be verified in SendGrid. Run: node setup-sender.js');
+                } else {
+                    console.error('\n  ⚠️  If SendGrid accepts emails (202) but they show "Deferred" in Activity:');
+                    console.error('     Check recipient mail server connectivity (see scholarship application handler for details)');
                 }
             });
     }
@@ -1569,8 +1577,8 @@ Submitted At: ${new Date().toISOString()}
                 <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
             `;
             
-            // Use SENDGRID_TO_EMAIL or default to scholarships@kns.edu.sl
-            const scholarshipRecipientEmail = process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'scholarships@kns.edu.sl';
+            // Use SENDGRID_SCHOLARSHIP_EMAIL or default to knscollegesle@gmail.com
+            const scholarshipRecipientEmail = process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'knscollegesle@gmail.com';
             
             const msg = {
                 to: scholarshipRecipientEmail,
@@ -1592,7 +1600,11 @@ Submitted At: ${new Date().toISOString()}
                     console.log(`  From: ${sendgridFromEmail}`);
                     console.log(`  To: ${scholarshipRecipientEmail}`);
                     console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
-                    console.log(`  SendGrid Headers:`, response[0]?.headers || 'N/A');
+                    if (response[0]?.headers?.['x-message-id']) {
+                        console.log(`  Message ID: ${response[0].headers['x-message-id']}`);
+                    }
+                    console.log(`  ⚠️  Note: SendGrid accepted the email (202), but delivery depends on recipient mail server.`);
+                    console.log(`  ⚠️  If emails show "Deferred" in SendGrid Activity, check recipient mail server connectivity.`);
                 })
                 .catch((emailError) => {
                     console.error('✗ Error sending scholarship application email via SendGrid');
@@ -1626,6 +1638,20 @@ Submitted At: ${new Date().toISOString()}
                     } else {
                         console.error(`  Full Error:`, emailError.message || emailError);
                     }
+                    
+                    // Warn about delivery issues
+                    console.error('\n  ⚠️  IMPORTANT: If SendGrid accepts emails (202 status) but they show "Deferred" in Activity:');
+                    console.error('     This indicates the recipient mail server cannot be reached.');
+                    console.error('     Common causes:');
+                    console.error('     1. Mail server is down or unreachable');
+                    console.error('     2. Port 25 is blocked by firewall');
+                    console.error('     3. Mail server IP is blacklisted');
+                    console.error('     4. DNS/MX records misconfigured');
+                    console.error('     Solutions:');
+                    console.error('     - Test with a working email (Gmail, Outlook) to verify SendGrid works');
+                    console.error('     - Check MX records: nslookup -type=MX kns.edu.sl');
+                    console.error('     - Verify mail server accepts connections on port 25');
+                    console.error('     - Consider using email forwarding service\n');
                 });
         }
         
