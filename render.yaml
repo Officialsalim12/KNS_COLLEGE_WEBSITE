@@ -5,6 +5,10 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    # Note: Free tier services spin down after 15 minutes of inactivity
+    # This causes 50+ second cold start delays. Solutions:
+    # 1. Use external monitoring (UptimeRobot, cron-job.org) to ping /api/health every 10-14 minutes
+    # 2. Upgrade to paid plan for always-on service
     envVars:
       - key: NODE_ENV
         value: production

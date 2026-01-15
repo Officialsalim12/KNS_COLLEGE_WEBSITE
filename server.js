@@ -85,7 +85,10 @@ if (!sendgridApiKey) {
             if (envFromEmail && envFromEmail !== verifiedSenderEmail) {
                 console.warn(`  ⚠️  Warning: SENDGRID_FROM_EMAIL was set to "${envFromEmail}" but using verified sender "${verifiedSenderEmail}" instead.`);
             }
-            console.log(`  To Email: ${sendgridToEmail}`);
+            console.log(`  Default To Email: ${sendgridToEmail}`);
+            console.log(`  Scholarship Applications To: ${process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'scholarships@kns.edu.sl'}`);
+            console.log(`  Contact Forms To: ${process.env.SENDGRID_CONTACT_EMAIL || 'admissions@kns.edu.sl'}`);
+            console.log(`  Enquiry Forms To: ${process.env.SENDGRID_ENQUIRY_EMAIL || 'enquiry@kns.edu.sl'}`);
             console.log(`  API Key: ✓ Set (length: ${sendgridApiKey.length} characters)\n`);
         } catch (error) {
             console.error('✗ Error setting SendGrid API key:', error.message);
@@ -97,11 +100,17 @@ if (!sendgridApiKey) {
 // Middleware
 // CORS configuration - allows requests from Sector Link frontend and other origins
 // Frontend is hosted on www.kns.edu.sl, backend is on Render
+// Set DEBUG_CORS=true environment variable to enable detailed CORS logging
+const DEBUG_CORS = process.env.DEBUG_CORS === 'true';
+
 const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, Postman, etc.)
+        // Only log in debug mode to reduce log noise
         if (!origin) {
-            console.log('CORS: Allowing request with no origin');
+            if (DEBUG_CORS) {
+                console.log('CORS: Allowing request with no origin');
+            }
             return callback(null, true);
         }
         
@@ -114,7 +123,9 @@ const corsOptions = {
         ];
         
         if (allowedDomains.includes(origin) || origin.includes('kns.edu.sl')) {
-            console.log(`CORS: Allowing request from KNS domain: ${origin}`);
+            if (DEBUG_CORS) {
+                console.log(`CORS: Allowing request from KNS domain: ${origin}`);
+            }
             return callback(null, true);
         }
         
@@ -123,17 +134,22 @@ const corsOptions = {
             ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
             : ['*']; // Default: allow all origins
         
-        // If '*' is in allowed origins, allow all
+        // If '*' is in allowed origins, allow all (only log in debug mode)
         if (allowedOrigins.includes('*')) {
-            console.log(`CORS: Allowing request from origin (wildcard): ${origin}`);
+            if (DEBUG_CORS) {
+                console.log(`CORS: Allowing request from origin (wildcard): ${origin}`);
+            }
             return callback(null, true);
         }
         
         // Check if origin is in allowed list
         if (allowedOrigins.includes(origin)) {
-            console.log(`CORS: Allowing request from origin (in list): ${origin}`);
+            if (DEBUG_CORS) {
+                console.log(`CORS: Allowing request from origin (in list): ${origin}`);
+            }
             callback(null, true);
         } else {
+            // Log fallback cases as they might indicate misconfiguration
             console.log(`CORS: Allowing request from origin (fallback): ${origin}`);
             callback(null, true); // Still allow, but log for debugging
         }
@@ -160,7 +176,9 @@ app.use((req, res, next) => {
     // If origin matches allowed domains, use it; otherwise use origin or wildcard
     if (origin && (allowedOrigins.includes(origin) || origin.includes('kns.edu.sl'))) {
         res.header('Access-Control-Allow-Origin', origin);
-        console.log(`[CORS Header] Set Access-Control-Allow-Origin to: ${origin}`);
+        if (DEBUG_CORS) {
+            console.log(`[CORS Header] Set Access-Control-Allow-Origin to: ${origin}`);
+        }
     } else if (origin) {
         res.header('Access-Control-Allow-Origin', origin);
     } else {
@@ -173,7 +191,9 @@ app.use((req, res, next) => {
     res.header('Access-Control-Max-Age', '86400'); // 24 hours
     
     if (req.method === 'OPTIONS') {
-        console.log(`[CORS] Handling OPTIONS preflight request from origin: ${origin || 'none'}`);
+        if (DEBUG_CORS) {
+            console.log(`[CORS] Handling OPTIONS preflight request from origin: ${origin || 'none'}`);
+        }
         return res.sendStatus(200);
     }
     next();
@@ -261,9 +281,108 @@ function getUserAgent(req) {
 
 // API Routes
 
-// Health check endpoint
+// Root endpoint for health checks (Render and other services may ping this)
+app.get('/', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'KNS College API is running',
+        service: 'KNS College Backend API',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        endpoints: {
+            health: '/api/health',
+            scholarships: '/api/scholarships',
+            applications: '/api/scholarship-applications'
+        }
+    });
+});
+
+// Health check endpoint (for monitoring services)
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'KNS College API is running' });
+    res.json({ 
+        status: 'ok', 
+        message: 'KNS College API is running',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        supabase_configured: !!(supabaseUrl && supabaseAnonKey),
+        sendgrid_configured: !!sendgridApiKey
+    });
+});
+
+// Test email endpoint (for debugging email delivery)
+app.post('/api/test-email', async (req, res) => {
+    const { to } = req.body;
+    const testRecipient = to || process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'scholarships@kns.edu.sl';
+    
+    if (!sendgridApiKey || !sendgridFromEmail) {
+        return res.status(500).json({ 
+            error: 'SendGrid not configured',
+            message: 'SENDGRID_API_KEY and SENDGRID_FROM_EMAIL must be set'
+        });
+    }
+    
+    try {
+        const testSubject = `Test Email from KNS College API - ${new Date().toISOString()}`;
+        const testBody = `
+This is a test email from the KNS College API server.
+
+If you receive this email, it means:
+✓ SendGrid API key is valid
+✓ Sender email (${sendgridFromEmail}) is verified
+✓ Email delivery is working
+
+Server Details:
+- Timestamp: ${new Date().toISOString()}
+- Environment: ${process.env.NODE_ENV || 'development'}
+- Server: ${req.protocol}://${req.get('host')}
+
+You can safely delete this test email.
+        `.trim();
+        
+        const msg = {
+            to: testRecipient,
+            from: sendgridFromEmail,
+            subject: testSubject,
+            text: testBody,
+            html: `<p>${testBody.replace(/\n/g, '<br>')}</p>`
+        };
+        
+        console.log(`📧 Sending test email...`);
+        console.log(`  From: ${sendgridFromEmail}`);
+        console.log(`  To: ${testRecipient}`);
+        
+        const response = await sgMail.send(msg);
+        
+        console.log('✓ Test email sent successfully');
+        console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
+        
+        res.json({ 
+            success: true,
+            message: 'Test email sent successfully',
+            from: sendgridFromEmail,
+            to: testRecipient,
+            sendgrid_status: response[0]?.statusCode || 'Success',
+            note: 'Check your inbox (and spam folder) for the email'
+        });
+    } catch (error) {
+        console.error('✗ Error sending test email:', error);
+        console.error(`  Status Code: ${error.code || error.response?.statusCode || 'Unknown'}`);
+        
+        if (error.response?.body?.errors) {
+            error.response.body.errors.forEach((err, index) => {
+                console.error(`  Error ${index + 1}:`, err.message || err);
+            });
+        }
+        
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to send test email',
+            details: error.message || 'Unknown error',
+            status_code: error.code || error.response?.statusCode,
+            sendgrid_errors: error.response?.body?.errors || null
+        });
+    }
 });
 
 // Test endpoint for debugging API connectivity
@@ -566,20 +685,27 @@ Submitted At: ${new Date().toISOString()}
             <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
         `;
 
+        const contactRecipientEmail = process.env.SENDGRID_CONTACT_EMAIL || 'admissions@kns.edu.sl';
+        
         const msg = {
-            to: 'admissions@kns.edu.sl',
+            to: contactRecipientEmail,
             from: sendgridFromEmail,
             subject: subjectLine,
             text: textBody,
             html: htmlBody,
         };
 
+        console.log(`📧 Attempting to send contact form email...`);
+        console.log(`  From: ${sendgridFromEmail}`);
+        console.log(`  To: ${contactRecipientEmail}`);
+
         sgMail
             .send(msg)
-            .then(() => {
+            .then((response) => {
                 console.log('✓ Contact notification email sent via SendGrid');
                 console.log(`  From: ${sendgridFromEmail}`);
-                console.log(`  To: admissions@kns.edu.sl`);
+                console.log(`  To: ${contactRecipientEmail}`);
+                console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
             })
             .catch((emailError) => {
                 console.error('✗ Error sending contact email via SendGrid');
@@ -701,20 +827,27 @@ Submitted At: ${new Date().toISOString()}
             <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
         `;
 
+        const enquiryRecipientEmail = process.env.SENDGRID_ENQUIRY_EMAIL || 'enquiry@kns.edu.sl';
+        
         const msg = {
-            to: 'enquiry@kns.edu.sl',
+            to: enquiryRecipientEmail,
             from: sendgridFromEmail,
             subject: subjectLine,
             text: textBody,
             html: htmlBody,
         };
 
+        console.log(`📧 Attempting to send enquiry form email...`);
+        console.log(`  From: ${sendgridFromEmail}`);
+        console.log(`  To: ${enquiryRecipientEmail}`);
+
         sgMail
             .send(msg)
-            .then(() => {
+            .then((response) => {
                 console.log('✓ Enquiry notification email sent via SendGrid');
                 console.log(`  From: ${sendgridFromEmail}`);
-                console.log(`  To: enquiry@kns.edu.sl`);
+                console.log(`  To: ${enquiryRecipientEmail}`);
+                console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
             })
             .catch((emailError) => {
                 console.error('✗ Error sending enquiry email via SendGrid');
@@ -1436,26 +1569,36 @@ Submitted At: ${new Date().toISOString()}
                 <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
             `;
             
+            // Use SENDGRID_TO_EMAIL or default to scholarships@kns.edu.sl
+            const scholarshipRecipientEmail = process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'scholarships@kns.edu.sl';
+            
             const msg = {
-                to: 'scholarships@kns.edu.sl',
+                to: scholarshipRecipientEmail,
                 from: sendgridFromEmail,
                 subject: subjectLine,
                 text: textBody,
                 html: htmlBody,
             };
             
+            console.log(`📧 Attempting to send scholarship application email...`);
+            console.log(`  From: ${sendgridFromEmail}`);
+            console.log(`  To: ${scholarshipRecipientEmail}`);
+            console.log(`  Subject: ${subjectLine}`);
+            
             sgMail
                 .send(msg)
-                .then(() => {
+                .then((response) => {
                     console.log('✓ Scholarship application notification email sent via SendGrid');
                     console.log(`  From: ${sendgridFromEmail}`);
-                    console.log(`  To: scholarships@kns.edu.sl`);
+                    console.log(`  To: ${scholarshipRecipientEmail}`);
+                    console.log(`  SendGrid Status: ${response[0]?.statusCode || 'Success'}`);
+                    console.log(`  SendGrid Headers:`, response[0]?.headers || 'N/A');
                 })
                 .catch((emailError) => {
                     console.error('✗ Error sending scholarship application email via SendGrid');
                     console.error(`  Status Code: ${emailError.code || emailError.response?.statusCode || 'Unknown'}`);
                     console.error(`  From Email: ${sendgridFromEmail}`);
-                    console.error(`  To Email: scholarships@kns.edu.sl`);
+                    console.error(`  To Email: ${scholarshipRecipientEmail}`);
                     
                     // Log detailed error information
                     if (emailError.response) {
@@ -1648,9 +1791,15 @@ initDatabase()
         
         // Bind to 0.0.0.0 to accept connections from all interfaces (required for containers)
         server = app.listen(PORT, '0.0.0.0', () => {
+            const startupTime = Date.now();
             console.log(`KNS College API server running on http://0.0.0.0:${PORT}`);
             console.log(`API endpoints available at http://0.0.0.0:${PORT}/api`);
             console.log(`Using Supabase: ${supabaseUrl}`);
+            console.log(`\n💡 Tip: To prevent cold starts on Render free tier:`);
+            console.log(`   1. Set up a monitoring service (UptimeRobot, cron-job.org) to ping:`);
+            console.log(`      - https://kns-college-website.onrender.com/api/health`);
+            console.log(`      - Every 10-14 minutes (before 15min timeout)`);
+            console.log(`   2. Or upgrade to a paid plan for always-on service\n`);
         });
         
         // Keep the process alive
