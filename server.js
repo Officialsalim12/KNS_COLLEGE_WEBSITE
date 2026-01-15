@@ -49,8 +49,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Configure SendGrid
-// Trim and clean the API key to remove any whitespace or newlines that could cause issues
-const sendgridApiKey = process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.trim() : null;
+// Clean the API key to remove any whitespace, newlines, or invalid characters that could cause issues
+const sendgridApiKey = process.env.SENDGRID_API_KEY 
+    ? process.env.SENDGRID_API_KEY.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim() 
+    : null;
 // Use verified sender: scholarships@kns.edu.sl
 // If SENDGRID_FROM_EMAIL is set but not the verified email, use the verified one instead
 const envFromEmail = process.env.SENDGRID_FROM_EMAIL;
@@ -64,15 +66,32 @@ if (!sendgridApiKey) {
         'Warning: SENDGRID_API_KEY is not set. Contact form emails will not be sent.'
     );
 } else {
-    // Set API key with cleaned value
-    sgMail.setApiKey(sendgridApiKey);
-    console.log('SendGrid Configuration:');
-    console.log(`  From Email: ${sendgridFromEmail} ${sendgridFromEmail === verifiedSenderEmail ? '✓ (Verified)' : '⚠️ (Not verified)'}`);
-    if (envFromEmail && envFromEmail !== verifiedSenderEmail) {
-        console.warn(`  ⚠️  Warning: SENDGRID_FROM_EMAIL was set to "${envFromEmail}" but using verified sender "${verifiedSenderEmail}" instead.`);
+    // Validate API key format (SendGrid API keys start with "SG.")
+    if (!sendgridApiKey.startsWith('SG.')) {
+        console.warn('⚠️  Warning: SENDGRID_API_KEY does not appear to be in the correct format (should start with "SG.")');
     }
-    console.log(`  To Email: ${sendgridToEmail}`);
-    console.log(`  API Key: ${sendgridApiKey ? '✓ Set' : '✗ Missing'}\n`);
+    
+    // Check for any remaining invalid characters that could cause header issues
+    const invalidChars = /[\r\n\t]/;
+    if (invalidChars.test(sendgridApiKey)) {
+        console.error('✗ Error: SENDGRID_API_KEY contains invalid characters (newlines, tabs, etc.)');
+        console.error('  Please check your environment variable on Render and ensure it contains only the API key without any extra characters.');
+    } else {
+        // Set API key with cleaned value
+        try {
+            sgMail.setApiKey(sendgridApiKey);
+            console.log('SendGrid Configuration:');
+            console.log(`  From Email: ${sendgridFromEmail} ${sendgridFromEmail === verifiedSenderEmail ? '✓ (Verified)' : '⚠️ (Not verified)'}`);
+            if (envFromEmail && envFromEmail !== verifiedSenderEmail) {
+                console.warn(`  ⚠️  Warning: SENDGRID_FROM_EMAIL was set to "${envFromEmail}" but using verified sender "${verifiedSenderEmail}" instead.`);
+            }
+            console.log(`  To Email: ${sendgridToEmail}`);
+            console.log(`  API Key: ✓ Set (length: ${sendgridApiKey.length} characters)\n`);
+        } catch (error) {
+            console.error('✗ Error setting SendGrid API key:', error.message);
+            console.error('  Please verify your SENDGRID_API_KEY environment variable on Render.');
+        }
+    }
 }
 
 // Middleware
