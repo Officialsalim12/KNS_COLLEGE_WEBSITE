@@ -12,10 +12,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     const urlParams = new URLSearchParams(window.location.search);
-    const scholarshipId = urlParams.get('id');
+    const scholarshipId = urlParams.get('id') || urlParams.get('scholarship_id');
     
+    // If no scholarship ID, hide the scholarship details section but allow the form to work
     if (!scholarshipId) {
-        showError('No scholarship ID provided. Please select a scholarship from the <a href="scholarships.html">scholarships page</a>.');
+        // Hide scholarship details sections if they exist
+        const eligibilitySection = document.getElementById('eligibilitySection');
+        const guideSection = document.getElementById('guideSection');
+        const deadlineSection = document.getElementById('deadlineSection');
+        
+        if (eligibilitySection) eligibilitySection.style.display = 'none';
+        if (guideSection) guideSection.style.display = 'none';
+        if (deadlineSection) deadlineSection.style.display = 'none';
+        
+        // Update page title and header to show it's a general application
+        const scholarshipTitle = document.getElementById('scholarshipTitle');
+        if (scholarshipTitle) {
+            scholarshipTitle.textContent = 'Scholarship Application';
+        }
+        const scholarshipAward = document.getElementById('scholarshipAward');
+        if (scholarshipAward) {
+            scholarshipAward.textContent = 'Apply for the KNS College Scholarship Programme 2026';
+        }
+        
+        // Still allow the form to work - scholarship_id is optional
+        console.log('No scholarship ID provided - form will work without it');
         return;
     }
     
@@ -25,20 +46,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (!response.ok) {
             console.error('API response not OK:', response.status, response.statusText);
-            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            // Don't show error, just log it and allow form to work
+            console.warn('Could not load scholarship details, but form will still work');
+            return;
         }
         
         const result = await response.json();
         
         if (!result.success || !result.scholarship) {
-            showError('Scholarship not found. Please return to the <a href="scholarships.html">scholarships page</a>.');
+            console.warn('Scholarship not found, but form will still work');
             return;
         }
         
         populateScholarshipDetails(result.scholarship);
     } catch (error) {
         console.error('Error loading scholarship:', error);
-        showError('Unable to load scholarship details. Please try again later.');
+        // Don't block the form - just log the error
+        console.warn('Could not load scholarship details, but form will still work');
     }
 });
 

@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     gender: document.getElementById('gender').value,
                     date_of_birth: document.getElementById('date_of_birth').value,
                     nationality: document.getElementById('nationality').value,
+                    national_id: document.getElementById('national_id').value,
                     address: document.getElementById('address').value,
                     city: document.getElementById('city').value,
                     phone: document.getElementById('phone').value,
