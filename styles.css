@@ -648,6 +648,61 @@ body {
     font-size: 0.95rem;
 }
 
+/* ============================================
+   Structure Table
+   ============================================ */
+.structure-table {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: var(--spacing-md);
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.structure-table-content {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--background-color);
+    font-size: 0.95rem;
+    min-width: 600px;
+}
+
+.structure-table-content thead {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.structure-table-content th {
+    padding: var(--spacing-md);
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+.structure-table-content tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+.structure-table-content tbody tr:hover {
+    background-color: var(--background-light);
+}
+
+.structure-table-content td {
+    padding: var(--spacing-md);
+    color: var(--text-color);
+    border: none;
+    vertical-align: top;
+}
+
+.structure-table-content td strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
 .schedule-table thead {
     background-color: var(--primary-color);
     color: #ffffff;
@@ -1401,6 +1456,35 @@ body {
         align-items: center;
     }
     
+    /* Course Cards Medium Tablet Responsive */
+    .courses-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+    
+    .course-card {
+        flex-direction: row;
+        min-height: 260px;
+    }
+    
+    .course-image {
+        width: 300px;
+        min-width: 300px;
+        height: 100%;
+    }
+    
+    .course-name {
+        font-size: 1.4rem;
+    }
+    
+    .course-summary {
+        font-size: 1rem;
+    }
+    
+    .course-meta {
+        font-size: 0.95rem;
+    }
+    
     .contact-info-section {
         order: 1;
         width: 100%;
@@ -1537,6 +1621,15 @@ body {
     
     .schedule-table th,
     .schedule-table td {
+        padding: var(--spacing-sm);
+    }
+    
+    .structure-table {
+        font-size: 0.85rem;
+    }
+    
+    .structure-table-content th,
+    .structure-table-content td {
         padding: var(--spacing-sm);
     }
     
@@ -2013,6 +2106,29 @@ body {
     /* Programmes Page Responsive */
     .courses-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .course-card {
+        flex-direction: column;
+        min-height: auto;
+    }
+    
+    .course-image {
+        width: 100%;
+        min-width: unset;
+        height: 250px;
+    }
+    
+    .course-name {
+        font-size: 1.5rem;
+    }
+    
+    .course-summary {
+        font-size: 1rem;
+    }
+    
+    .course-meta {
+        font-size: 0.9rem;
     }
     
     .category-title {
@@ -3939,8 +4055,10 @@ body {
 
 .courses-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .course-card {
@@ -3951,8 +4069,9 @@ body {
     transition: all 0.3s ease;
     border: 1px solid var(--border-color);
     display: flex;
-    flex-direction: column;
-    height: 100%;
+    flex-direction: row;
+    min-height: 300px;
+    height: auto;
 }
 
 .course-card:hover {
@@ -3962,8 +4081,9 @@ body {
 }
 
 .course-image {
-    width: 100%;
-    height: 200px;
+    width: 400px;
+    min-width: 400px;
+    height: 100%;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
     display: flex;
     align-items: center;
@@ -3973,19 +4093,7 @@ body {
 }
 
 .course-image::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.05) 10px,
-        rgba(255, 255, 255, 0.05) 20px
-    );
+    display: none;
 }
 
 .course-image-placeholder {
@@ -4006,27 +4114,27 @@ body {
 }
 
 .course-name {
-    font-size: var(--font-size-h4);
+    font-size: 2rem;
     color: var(--primary-color);
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
     font-weight: 600;
     line-height: 1.3;
 }
 
 .course-summary {
     color: var(--text-light);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     line-height: 1.7;
-    font-size: var(--font-size-body);
+    font-size: 1.2rem;
     flex: 1;
 }
 
 .course-meta {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
-    margin-bottom: var(--spacing-sm);
-    font-size: 0.9rem;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.1rem;
     color: var(--text-lighter);
 }
 
@@ -7339,6 +7447,35 @@ body {
         font-size: 1.1rem;
     }
     
+    /* Course Cards Tablet Responsive */
+    .courses-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+    
+    .course-card {
+        flex-direction: row;
+        min-height: 280px;
+    }
+    
+    .course-image {
+        width: 350px;
+        min-width: 350px;
+        height: 100%;
+    }
+    
+    .course-name {
+        font-size: 1.6rem;
+    }
+    
+    .course-summary {
+        font-size: 1.1rem;
+    }
+    
+    .course-meta {
+        font-size: 1rem;
+    }
+    
     .content-heading {
         font-size: 1.8rem;
     }
@@ -7600,7 +7737,7 @@ body {
         width: 100%;
     }
     
-    /* Make sure all menu items are visible */
+    /* All menu items are visible */
     .nav-menu > li {
         display: block !important;
         visibility: visible !important;
@@ -7612,7 +7749,7 @@ body {
         visibility: visible !important;
     }
     
-    /* Ensure dropdown menu items are visible when parent is open */
+    /* Dropdown menu items are visible when parent is open */
     .has-dropdown.dropdown-open .dropdown-menu li {
         display: block !important;
         visibility: visible !important;
@@ -7898,6 +8035,29 @@ body {
         grid-template-columns: 1fr;
     }
     
+    .course-card {
+        flex-direction: column;
+        min-height: auto;
+    }
+    
+    .course-image {
+        width: 100%;
+        min-width: unset;
+        height: 250px;
+    }
+    
+    .course-name {
+        font-size: 1.5rem;
+    }
+    
+    .course-summary {
+        font-size: 1rem;
+    }
+    
+    .course-meta {
+        font-size: 0.9rem;
+    }
+    
     .programmes-grid {
         grid-template-columns: 1fr;
     }
@@ -8161,6 +8321,17 @@ body {
     
     .schedule-table th,
     .schedule-table td {
+        padding: var(--spacing-sm);
+        white-space: nowrap;
+    }
+    
+    .structure-table {
+        overflow-x: auto;
+        font-size: 0.85rem;
+    }
+    
+    .structure-table-content th,
+    .structure-table-content td {
         padding: var(--spacing-sm);
         white-space: nowrap;
     }
@@ -8780,7 +8951,6 @@ body {
     .contact-info-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    }
     
     .course-description {
         font-size: 0.85rem;
@@ -9056,9 +9226,13 @@ body {
 
 .scholarships-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 400px));
     gap: var(--spacing-lg);
     margin-top: var(--spacing-lg);
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    justify-content: center;
 }
 
 .scholarship-card {
@@ -9070,6 +9244,7 @@ body {
     display: flex;
     flex-direction: column;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
 }
 
 .scholarship-card:hover {

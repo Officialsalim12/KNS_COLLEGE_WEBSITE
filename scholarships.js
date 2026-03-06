@@ -197,7 +197,8 @@ function createScholarshipCard(scholarship) {
     const card = document.createElement('div');
     card.className = 'scholarship-card';
     
-    const deadlineDate = new Date(scholarship.deadline);
+    // Force deadline to 22 January 2026 at 11:59 PM (override API value)
+    const deadlineDate = new Date('2026-01-22T23:59:59');
     const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
