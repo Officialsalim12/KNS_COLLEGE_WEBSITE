@@ -8,6 +8,7 @@
 // Try .env.local first (for local development), then .env, then use system env vars (for production)
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 if (fs.existsSync(path.join(__dirname, '.env.local'))) {
     require('dotenv').config({ path: '.env.local' });
@@ -32,10 +33,83 @@ const PORT = process.env.PORT || 3000;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
+/** Monime hosted checkout — https://docs.monime.io/developer-resources/api-basics */
+const MONIME_ACCESS_TOKEN = (process.env.MONIME_ACCESS_TOKEN || '').trim();
+const MONIME_SPACE_ID = (process.env.MONIME_SPACE_ID || '').trim();
+const MONIME_API_BASE = (process.env.MONIME_API_BASE_URL || 'https://api.monime.io').replace(/\/+$/, '');
+const MONIME_VERSION = (process.env.MONIME_VERSION || 'caph.2025-08-23').trim();
+/** When true, reject checkout if token is mon_test_* (use on production for real payments only). */
+const MONIME_REQUIRE_LIVE_TOKEN = process.env.MONIME_REQUIRE_LIVE_TOKEN === 'true';
+
+function getMonimeTokenMode() {
+    if (!MONIME_ACCESS_TOKEN) return 'unset';
+    if (MONIME_ACCESS_TOKEN.startsWith('mon_test_')) return 'test';
+    if (MONIME_ACCESS_TOKEN.startsWith('mon_')) return 'live';
+    return 'unknown';
+}
+
+const MONIME_TOKEN_MODE = getMonimeTokenMode();
+
+function buildMonimeCheckoutAllowedOrigins() {
+    const defaults = [
+        'https://www.kns.edu.sl',
+        'https://kns.edu.sl',
+        'http://www.kns.edu.sl',
+        'http://kns.edu.sl',
+        'https://www.kns.sl',
+        'https://kns.sl',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5500',
+        'http://127.0.0.1:5500',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://kns-college-website.onrender.com'
+    ];
+    const raw = process.env.MONIME_ALLOWED_CHECKOUT_ORIGINS;
+    const list = raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : defaults;
+    const set = new Set();
+    list.forEach((item) => {
+        try {
+            set.add(new URL(item).origin);
+        } catch (e) {
+            /* ignore invalid entries */
+        }
+    });
+    return set;
+}
+
+const monimeCheckoutAllowedOrigins = buildMonimeCheckoutAllowedOrigins();
+
+if (MONIME_ACCESS_TOKEN) {
+    if (MONIME_TOKEN_MODE === 'test' && process.env.NODE_ENV === 'production') {
+        console.warn(
+            '⚠️  Monime: MONIME_ACCESS_TOKEN is a TEST token while NODE_ENV=production. Use a live token (mon_…) for real customer payments. See https://docs.monime.io/developer-resources/api-basics'
+        );
+    }
+    if (MONIME_TOKEN_MODE === 'test' && MONIME_REQUIRE_LIVE_TOKEN) {
+        console.error(
+            '✗ Monime: MONIME_REQUIRE_LIVE_TOKEN=true but token is mon_test_. Set a live token or disable MONIME_REQUIRE_LIVE_TOKEN for sandbox.'
+        );
+    }
+    if (MONIME_TOKEN_MODE === 'live') {
+        console.log('  Monime: LIVE mode — checkout sessions move real funds (per Monime Space settings).');
+    } else if (MONIME_TOKEN_MODE === 'test') {
+        console.log('  Monime: TEST mode — sandbox only (mon_test_ token).');
+    } else if (MONIME_TOKEN_MODE === 'unknown') {
+        console.warn('  Monime: token does not start with mon_ or mon_test_; verify token format with Monime.');
+    }
+}
+
 // Log environment status (without exposing sensitive values)
 console.log('Environment check:');
 console.log(`  SUPABASE_URL: ${supabaseUrl ? '✓ Set' : '✗ Missing'}`);
 console.log(`  SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✓ Set' : '✗ Missing'}`);
+console.log(`  MONIME_ACCESS_TOKEN: ${MONIME_ACCESS_TOKEN ? '✓ Set' : '✗ Missing (online checkout disabled)'}`);
+console.log(`  MONIME_SPACE_ID: ${MONIME_SPACE_ID ? '✓ Set' : '✗ Missing'}`);
+if (MONIME_ACCESS_TOKEN) {
+    console.log(`  Monime token mode: ${MONIME_TOKEN_MODE}${MONIME_REQUIRE_LIVE_TOKEN ? ' (live token required)' : ''}`);
+}
 console.log(`  PORT: ${PORT}`);
 console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 
@@ -306,7 +380,14 @@ app.get('/api/health', (req, res) => {
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',
         supabase_configured: !!(supabaseUrl && supabaseAnonKey),
-        sendgrid_configured: !!sendgridApiKey
+        sendgrid_configured: !!sendgridApiKey,
+        monime_checkout_configured: !!(MONIME_ACCESS_TOKEN && MONIME_SPACE_ID),
+        monime_token_mode: MONIME_TOKEN_MODE,
+        monime_require_live_token: MONIME_REQUIRE_LIVE_TOKEN,
+        features: {
+            online_course_ratings: true,
+            monime_checkout_session: true
+        }
     });
 });
 
@@ -396,6 +477,303 @@ app.get('/api/test', (req, res) => {
         host: req.headers.host || 'none',
         supabase_configured: !!(supabaseUrl && supabaseAnonKey)
     });
+});
+
+// --- Online course ratings (registered early so dev/prod always see these routes) ---
+const OC_RATING_WINDOW_MS = 60 * 60 * 1000;
+const OC_RATING_MAX_PER_WINDOW = 40;
+const ocRatingIpBuckets = new Map();
+
+function ocRatingThrottleAllowed(ip) {
+    const now = Date.now();
+    const b = ocRatingIpBuckets.get(ip);
+    if (!b || now - b.startedAt > OC_RATING_WINDOW_MS) return true;
+    return b.count < OC_RATING_MAX_PER_WINDOW;
+}
+
+function ocRatingThrottleRecordSuccess(ip) {
+    const now = Date.now();
+    let b = ocRatingIpBuckets.get(ip);
+    if (!b || now - b.startedAt > OC_RATING_WINDOW_MS) {
+        b = { count: 0, startedAt: now };
+    }
+    b.count += 1;
+    ocRatingIpBuckets.set(ip, b);
+}
+
+function aggregateOnlineCourseRatings(rows) {
+    const sums = {};
+    if (!rows || !rows.length) return [];
+    rows.forEach((r) => {
+        const k = r.course_key;
+        if (!k) return;
+        if (!sums[k]) sums[k] = { sum: 0, count: 0 };
+        sums[k].sum += Number(r.stars);
+        sums[k].count += 1;
+    });
+    return Object.keys(sums).map((course_key) => {
+        const { sum, count } = sums[course_key];
+        return {
+            course_key,
+            average: Math.round((sum / count) * 100) / 100,
+            count
+        };
+    });
+}
+
+async function fetchRatingAggregateForCourse(courseKey) {
+    const { data, error } = await supabase
+        .from('online_course_ratings')
+        .select('stars')
+        .eq('course_key', courseKey);
+    if (error) throw error;
+    if (!data || !data.length) {
+        return { course_key: courseKey, average: null, count: 0 };
+    }
+    const sum = data.reduce((s, row) => s + Number(row.stars), 0);
+    const count = data.length;
+    return {
+        course_key: courseKey,
+        average: Math.round((sum / count) * 100) / 100,
+        count
+    };
+}
+
+app.get('/api/online-course-ratings', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('online_course_ratings')
+            .select('course_key, stars');
+        if (error) {
+            if (error.code === 'PGRST116' || error.code === '42P01') {
+                return res.json({ success: true, ratings: [], message: 'Ratings table not found; run database/supabase_online_course_ratings.sql in Supabase.' });
+            }
+            console.error('online-course-ratings GET:', error);
+            return res.status(500).json({ success: false, error: 'Failed to load ratings' });
+        }
+        const ratings = aggregateOnlineCourseRatings(data || []);
+        res.json({ success: true, ratings });
+    } catch (err) {
+        console.error('online-course-ratings GET:', err);
+        res.status(500).json({ success: false, error: 'Failed to load ratings' });
+    }
+});
+
+app.post('/api/online-course-ratings', async (req, res) => {
+    try {
+        const ipAddress = getClientIp(req);
+        if (!ocRatingThrottleAllowed(ipAddress)) {
+            return res.status(429).json({
+                success: false,
+                error: 'Too many ratings from this network. Please try again later.'
+            });
+        }
+
+        const rawKey = req.body.courseKey ?? req.body.course_key ?? '';
+        const course_key = typeof rawKey === 'string' ? rawKey.trim().slice(0, 400) : '';
+        const stars = parseInt(req.body.stars, 10);
+        let comment = req.body.comment;
+        if (typeof comment === 'string') {
+            comment = comment.trim().slice(0, 2000) || null;
+        } else {
+            comment = null;
+        }
+        let rater_email = req.body.email ?? req.body.rater_email;
+        if (typeof rater_email === 'string') {
+            rater_email = rater_email.trim().slice(0, 200) || null;
+        } else {
+            rater_email = null;
+        }
+
+        if (!course_key) {
+            return res.status(400).json({ success: false, error: 'courseKey is required' });
+        }
+        if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+            return res.status(400).json({ success: false, error: 'stars must be an integer from 1 to 5' });
+        }
+
+        const userAgent = getUserAgent(req);
+        const { error: insertError } = await supabase.from('online_course_ratings').insert([
+            {
+                course_key,
+                stars,
+                comment,
+                rater_email,
+                ip_address: ipAddress,
+                user_agent: userAgent
+            }
+        ]);
+
+        if (insertError) {
+            console.error('online-course-ratings POST insert:', insertError);
+            if (insertError.code === 'PGRST116' || insertError.code === '42P01') {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Ratings storage is not set up yet. Run database/supabase_online_course_ratings.sql in Supabase.'
+                });
+            }
+            return res.status(500).json({ success: false, error: 'Failed to save rating' });
+        }
+
+        ocRatingThrottleRecordSuccess(ipAddress);
+        const rating = await fetchRatingAggregateForCourse(course_key);
+        res.json({ success: true, rating });
+    } catch (err) {
+        console.error('online-course-ratings POST:', err);
+        res.status(500).json({ success: false, error: 'Failed to save rating' });
+    }
+});
+
+/**
+ * Proxy: create Monime Checkout Session (never expose MONIME_ACCESS_TOKEN to the browser).
+ * API: POST https://api.monime.io/v1/checkout-sessions — see create-checkout-session in Monime docs.
+ */
+function isAllowedMonimeReturnUrl(urlStr) {
+    if (!urlStr || typeof urlStr !== 'string') return false;
+    try {
+        const u = new URL(urlStr);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+        return monimeCheckoutAllowedOrigins.has(u.origin);
+    } catch (e) {
+        return false;
+    }
+}
+
+app.post('/api/monime/checkout-session', async (req, res) => {
+    try {
+        if (!MONIME_ACCESS_TOKEN || !MONIME_SPACE_ID) {
+            return res.status(503).json({
+                success: false,
+                error:
+                    'Monime is not configured. Set MONIME_ACCESS_TOKEN and MONIME_SPACE_ID on the server (Render env or .env.local).',
+                docs: 'https://docs.monime.io/developer-resources/api-basics'
+            });
+        }
+
+        if (MONIME_REQUIRE_LIVE_TOKEN && MONIME_TOKEN_MODE === 'test') {
+            return res.status(403).json({
+                success: false,
+                error:
+                    'This server is configured for live payments only. Replace MONIME_ACCESS_TOKEN with a Monime live token (starts with mon_, not mon_test_), or set MONIME_REQUIRE_LIVE_TOKEN=false for sandbox.',
+                docs: 'https://docs.monime.io/developer-resources/api-basics'
+            });
+        }
+
+        const {
+            customerEmail,
+            fullName,
+            phone,
+            courseName,
+            priceLabel,
+            successUrl,
+            cancelUrl,
+            idempotencyKey,
+            amountMinor,
+            currency
+        } = req.body || {};
+
+        if (!customerEmail || !fullName || !phone || !courseName) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: customerEmail, fullName, phone, and courseName are required.'
+            });
+        }
+        if (!successUrl || !cancelUrl) {
+            return res.status(400).json({
+                success: false,
+                error: 'successUrl and cancelUrl are required.'
+            });
+        }
+        if (!isAllowedMonimeReturnUrl(successUrl) || !isAllowedMonimeReturnUrl(cancelUrl)) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    'successUrl or cancelUrl origin is not allowed. Set MONIME_ALLOWED_CHECKOUT_ORIGINS (comma-separated base URLs) to include your site origin.'
+            });
+        }
+
+        const ccy = (currency || 'SLE').toString().slice(0, 3).toUpperCase();
+        if (ccy !== 'SLE') {
+            return res.status(400).json({ success: false, error: 'Only SLE currency is supported for this checkout.' });
+        }
+
+        const amount = parseInt(amountMinor, 10);
+        if (!Number.isInteger(amount) || amount < 1 || amount > 100000000) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid amountMinor: must be a positive integer (SLE minor units, e.g. 100000 = SLE 1000.00).'
+            });
+        }
+
+        const idem =
+            idempotencyKey && String(idempotencyKey).trim().length > 0
+                ? String(idempotencyKey).trim().slice(0, 64)
+                : crypto.randomUUID();
+
+        const lineItemName = String(courseName).trim().slice(0, 100);
+        const sessionTitle = `KNS Online — ${lineItemName}`.slice(0, 150);
+
+        const monimeBody = {
+            name: sessionTitle,
+            description: `Online course enrollment. ${String(priceLabel || '').slice(0, 950)}`.slice(0, 1000),
+            reference: `kns-enroll-${Date.now()}`.slice(0, 255),
+            successUrl,
+            cancelUrl,
+            lineItems: [
+                {
+                    type: 'custom',
+                    name: lineItemName,
+                    quantity: 1,
+                    price: { currency: 'SLE', value: amount }
+                }
+            ],
+            paymentOptions: {
+                momo: { enabledProviders: ['m17', 'm18'] }
+            },
+            brandingOptions: {
+                primaryColor: '#1a4d7a'
+            },
+            metadata: {
+                customer_email: String(customerEmail).trim().slice(0, 100),
+                customer_phone: String(phone).trim().slice(0, 100),
+                customer_name: String(fullName).trim().slice(0, 100),
+                course: lineItemName.slice(0, 100)
+            }
+        };
+
+        const monimeRes = await fetch(`${MONIME_API_BASE}/v1/checkout-sessions`, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${MONIME_ACCESS_TOKEN}`,
+                'Monime-Space-Id': MONIME_SPACE_ID,
+                'Monime-Version': MONIME_VERSION,
+                'Idempotency-Key': idem
+            },
+            body: JSON.stringify(monimeBody)
+        });
+
+        const json = await monimeRes.json().catch(() => ({}));
+
+        if (!monimeRes.ok) {
+            const msg =
+                (json && (json.message || json.error)) ||
+                (Array.isArray(json.messages) && json.messages[0] && (json.messages[0].message || json.messages[0])) ||
+                'Monime did not create a checkout session.';
+            console.error('Monime API error:', monimeRes.status, msg, JSON.stringify(json).slice(0, 500));
+            return res.status(monimeRes.status >= 400 && monimeRes.status < 600 ? monimeRes.status : 502).json({
+                success: false,
+                error: typeof msg === 'string' ? msg : 'Monime checkout failed.',
+                details: process.env.NODE_ENV === 'development' ? json : undefined
+            });
+        }
+
+        return res.status(200).json(json);
+    } catch (err) {
+        console.error('Monime checkout-session exception:', err);
+        return res.status(500).json({ success: false, error: 'Failed to reach Monime. Try again later.' });
+    }
 });
 
 // Enhanced scholarships test endpoint with detailed diagnostics
@@ -1745,8 +2123,10 @@ app.use('/api/*', (req, res) => {
     console.error(`  Origin: ${req.headers.origin || 'none'}`);
     res.status(404).json({ 
         error: 'API route not found',
+        hint: 'Restart local Node (npm start) or redeploy Render so server.js matches this repo. Request path must match exactly (e.g. GET /api/online-course-ratings).',
         path: req.path,
         method: req.method,
+        originalUrl: req.originalUrl,
         availableRoutes: [
             'GET /api/health',
             'GET /api/test',
@@ -1768,7 +2148,10 @@ app.use('/api/*', (req, res) => {
             'GET /api/payments',
             'POST /api/scholarship-applications',
             'GET /api/scholarship-applications',
-            'GET /api/stats'
+            'GET /api/stats',
+            'GET /api/online-course-ratings',
+            'POST /api/online-course-ratings',
+            'POST /api/monime/checkout-session'
         ]
     });
 });

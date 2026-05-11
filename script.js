@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    
+    /** Match styles.css: primary nav uses overlay below this width (tablets, Nest Hub, Surface Pro, iPad Pro). */
+    const NAV_OVERLAY_MAX_WIDTH = 1366;
+
     const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
     const mainNav = document.querySelector('.main-nav');
     const sidebar = document.querySelector('.sidebar');
@@ -25,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= NAV_OVERLAY_MAX_WIDTH) {
             if (mainNav && mainNav.classList.contains('active')) {
                 if (!mainNav.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
                     mainNav.classList.remove('active');
@@ -50,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdownParents = mainNav.querySelectorAll('.has-dropdown > a');
         dropdownParents.forEach(parentLink => {
             parentLink.addEventListener('click', function(e) {
-                if (window.innerWidth <= 768) {
+                if (window.innerWidth <= NAV_OVERLAY_MAX_WIDTH) {
                     e.preventDefault();
                     const parent = this.parentElement;
                     const dropdown = parent.querySelector('.dropdown-menu');
@@ -78,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const navLinks = mainNav.querySelectorAll('a:not(.has-dropdown > a)');
         navLinks.forEach(link => {
             link.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
+                if (window.innerWidth <= NAV_OVERLAY_MAX_WIDTH) {
                     mainNav.classList.remove('active');
                     if (mobileMenuToggle) {
                         mobileMenuToggle.classList.remove('active');
@@ -91,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdownLinks = mainNav.querySelectorAll('.dropdown-menu a');
         dropdownLinks.forEach(link => {
             link.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
+                if (window.innerWidth <= NAV_OVERLAY_MAX_WIDTH) {
                     setTimeout(() => {
                         mainNav.classList.remove('active');
                         if (mobileMenuToggle) {
@@ -133,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', function() {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function() {
-            if (window.innerWidth > 768) {
+            if (window.innerWidth > NAV_OVERLAY_MAX_WIDTH) {
                 if (mainNav) {
                     mainNav.classList.remove('active');
                 }
@@ -279,30 +281,83 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    if (onlineCourseSearchInput) {
-        onlineCourseSearchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            const courseCards = document.querySelectorAll('.online-course-card');
-            
-            courseCards.forEach(card => {
-                const courseTitle = card.querySelector('.online-course-title')?.textContent.toLowerCase() || '';
-                const courseDuration = card.querySelector('.online-course-duration')?.textContent.toLowerCase() || '';
-                
-                const matches = courseTitle.includes(searchTerm) || courseDuration.includes(searchTerm);
-                
-                if (searchTerm === '' || matches) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+    const onlineCategoryFilterButtons = document.querySelectorAll('[data-online-category-filter]');
+    const onlineCoursesEmptyHint = document.getElementById('onlineCoursesEmptyHint');
+    const onlineCoursesFilterStatus = document.getElementById('onlineCoursesFilterStatus');
+    let activeOnlineCategory = 'all';
+
+    const ONLINE_CATEGORY_LABELS = {
+        business: 'business management leadership finance marketing accounting',
+        ict: 'ict software data computing network web development analyst ai cybersecurity telecommunications',
+        microsoft: 'microsoft azure office 365 power platform fundamentals certification',
+        cisco: 'cisco ccst networking support technician cybersecurity',
+        autodesk: 'autodesk autocad revit cad bim design'
+    };
+
+    function applyOnlineCoursesFilter() {
+        if (!document.body.classList.contains('page-online-courses')) return;
+
+        const searchTerm = (onlineCourseSearchInput?.value || '').toLowerCase().trim();
+        const cards = document.querySelectorAll('.online-course-card');
+        const sections = document.querySelectorAll('.online-course-category-block');
+
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+            const slug = card.getAttribute('data-online-category') || '';
+            const catOk = activeOnlineCategory === 'all' || slug === activeOnlineCategory;
+
+            const title = card.querySelector('.online-course-title')?.textContent.toLowerCase() || '';
+            const dataCourse = (card.getAttribute('data-course') || '').toLowerCase();
+            const enroll = (card.querySelector('.online-course-card__enroll')?.getAttribute('data-course-name') || '').toLowerCase();
+            const catWords = (ONLINE_CATEGORY_LABELS[slug] || '').toLowerCase();
+            const haystack = `${title} ${dataCourse} ${enroll} ${slug} ${catWords}`;
+
+            const searchOk = searchTerm === '' || haystack.includes(searchTerm);
+            const show = catOk && searchOk;
+            card.style.display = show ? '' : 'none';
+            if (show) visibleCount += 1;
         });
-        
+
+        sections.forEach((section) => {
+            const any = Array.from(section.querySelectorAll('.online-course-card')).some(
+                (c) => c.style.display !== 'none'
+            );
+            section.style.display = any ? '' : 'none';
+        });
+
+        if (onlineCoursesEmptyHint) {
+            onlineCoursesEmptyHint.hidden = visibleCount > 0;
+        }
+        if (onlineCoursesFilterStatus) {
+            onlineCoursesFilterStatus.textContent =
+                visibleCount === 0
+                    ? 'No courses match.'
+                    : `Showing ${visibleCount} of ${cards.length} courses.`;
+        }
+    }
+
+    if (onlineCourseSearchInput) {
+        onlineCourseSearchInput.addEventListener('input', applyOnlineCoursesFilter);
         onlineCourseSearchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
         });
+    }
+
+    onlineCategoryFilterButtons.forEach((btn) => {
+        btn.addEventListener('click', function() {
+            activeOnlineCategory = this.getAttribute('data-online-category-filter') || 'all';
+            onlineCategoryFilterButtons.forEach((b) => {
+                b.classList.toggle('is-active', b === this);
+            });
+            applyOnlineCoursesFilter();
+        });
+    });
+
+    if (document.body.classList.contains('page-online-courses')) {
+        applyOnlineCoursesFilter();
     }
     
     searchButtons.forEach(button => {
@@ -420,12 +475,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    document.querySelectorAll('a.online-course-card__enroll[data-course-name]').forEach((link) => {
+        const name = link.getAttribute('data-course-name');
+        if (!name) return;
+        const priceLabel =
+            typeof CONFIG !== 'undefined' && CONFIG.CHECKOUT_DISPLAY_PRICE
+                ? CONFIG.CHECKOUT_DISPLAY_PRICE
+                : 'NLe 1000';
+        link.href =
+            'checkout.html?course=' +
+            encodeURIComponent(name) +
+            '&price=' +
+            encodeURIComponent(priceLabel);
+    });
     
     function closeEnrollmentModal() {
         if (enrollmentModal) {
             enrollmentModal.classList.remove('active');
             document.body.style.overflow = '';
-            enrollmentForm.reset();
+            if (enrollmentForm) {
+                enrollmentForm.reset();
+            }
         }
     }
     

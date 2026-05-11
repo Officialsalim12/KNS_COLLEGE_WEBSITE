@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Online Courses - KNS College</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <!-- Top Header Navigation -->
+<body class="page-online-courses">
     <header class="top-header">
         <div class="container">
             <div class="header-content">
@@ -34,6 +33,7 @@
                             </ul>
                         </li>
                         <li><a href="corporate-training.html">Corporate Training</a></li>
+                        <li><a href="certifications.html">Certifications</a></li>
                         <li><a href="admissions.html">Admissions</a></li>
                         <li><a href="scholarships.html">Scholarships</a></li>
                         <li><a href="contact.html">Contact</a></li>
@@ -48,9 +48,25 @@
         </div>
     </header>
 
-    <!-- Main Content -->
+    <div class="online-courses-toolbar" role="search">
+        <div class="container online-courses-toolbar__inner">
+            <div class="online-courses-toolbar__search-wrap">
+                <label class="visually-hidden" for="onlineCourseSearch">Search online courses</label>
+                <svg class="online-courses-toolbar__search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="search" id="onlineCourseSearch" class="online-courses-toolbar__search-input" placeholder="Search by course name or category…" autocomplete="off" enterkeyhint="search">
+            </div>
+            <div class="online-courses-toolbar__chips" role="group" aria-label="Filter by category">
+                <button type="button" class="oc-filter-chip is-active" data-online-category-filter="all">All</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="business">Business</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="ict">ICT &amp; software</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="microsoft">Microsoft</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="cisco">Cisco</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="autodesk">Autodesk</button>
+            </div>
+        </div>
+    </div>
+
     <main class="main-content-full">
-        <!-- Page Header -->
         <section class="page-header">
             <div class="container">
                 <h1 class="page-title">Online Courses</h1>
@@ -58,183 +74,205 @@
             </div>
         </section>
 
-        <!-- Online Courses Content -->
         <section class="content-section">
             <div class="container">
                 <div class="content-intro">
                     <p class="content-text" style="text-align: center; margin-bottom: var(--spacing-lg); font-size: 1.1rem;">
-                        Explore our comprehensive range of online courses designed to fit your schedule. All courses include enrollment fee payment via mobile money (Afrimoney or Orange Money) for your convenience. Click "Apply Now" on any course to get started.
+                        Our online courses combine structured learning with flexible scheduling. Enrollment fees are payable securely through mobile money (Orange Money or Afrimoney). Select <strong>Enroll Now</strong> on your chosen course to open checkout and complete your application.
                     </p>
                 </div>
 
-                <!-- Diploma Programmes Section -->
                 <div class="program-category">
-                    <div class="category-header">
-                        <h2 class="category-title">Diploma Programmes</h2>
-                        <p class="category-description">Comprehensive diploma Programmes providing in-depth knowledge and practical experience.</p>
-                    </div>
-                    <div class="online-courses-grid">
-                        <div class="online-course-card" data-course="Diploma in Project Management">
-                            <h3 class="online-course-title">Diploma in Project Management</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in Project Management">Apply Now</button>
+                    <p id="onlineCoursesFilterStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+                    <div id="onlineCoursesEmptyHint" class="online-courses-empty-hint" hidden>No courses match your search or filter.</div>
+                    <div class="online-courses-categories" id="onlineCoursesCategoryRoot">
+                        <section class="online-course-category-block" data-online-category-section="business" aria-labelledby="oc-cat-business">
+                            <div class="online-course-category-block__head">
+                                <h2 id="oc-cat-business" class="online-course-category-block__title">Business &amp; management</h2>
+                                <p class="online-course-category-block__lead">Leadership, finance, marketing, and organisational technology.</p>
+                            </div>
+                            <div class="online-courses-grid">
+                        <div class="online-course-card" data-online-category="business" data-course="Project Management">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Project Management</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Project Management">Enroll Now</a>
+                            </div>
                         </div>
-                        <div class="online-course-card" data-course="Diploma in Enterprise and Small Business">
-                            <h3 class="online-course-title">Diploma in Enterprise and Small Business</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in Enterprise and Small Business">Apply Now</button>
+                        <div class="online-course-card" data-online-category="business" data-course="Enterprise and Small Business">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Enterprise and Small Business</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Enterprise and Small Business">Enroll Now</a>
+                            </div>
                         </div>
-                        <div class="online-course-card" data-course="Diploma in Applied Computerised Accounting & Intuit QuickBooks Technology">
-                            <h3 class="online-course-title">Diploma in Applied Computerised Accounting</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in Applied Computerised Accounting & Intuit QuickBooks Technology">Apply Now</button>
+                            </div>
+                        </section>
+                        <section class="online-course-category-block" data-online-category-section="ict" aria-labelledby="oc-cat-ict">
+                            <div class="online-course-category-block__head">
+                                <h2 id="oc-cat-ict" class="online-course-category-block__title">ICT, software &amp; data</h2>
+                                <p class="online-course-category-block__lead">Computing, networks, web development, analytics, and AI skills.</p>
+                            </div>
+                            <div class="online-courses-grid">
+                        <div class="online-course-card" data-online-category="ict" data-course="Cybersecurity">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Cybersecurity</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Cybersecurity">Enroll Now</a>
+                            </div>
                         </div>
-                        <div class="online-course-card" data-course="Diploma in Cybersecurity">
-                            <h3 class="online-course-title">Diploma in Cybersecurity</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in Cybersecurity">Apply Now</button>
+                        <div class="online-course-card" data-online-category="ict" data-course="Telecommunications">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Telecommunications</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Telecommunications">Enroll Now</a>
+                            </div>
                         </div>
-                        <div class="online-course-card" data-course="Diploma in Telecommunications">
-                            <h3 class="online-course-title">Diploma in Telecommunications</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in Telecommunications">Apply Now</button>
+                            </div>
+                        </section>
+                        <section class="online-course-category-block" data-online-category-section="microsoft" aria-labelledby="oc-cat-microsoft">
+                            <div class="online-course-category-block__head">
+                                <h2 id="oc-cat-microsoft" class="online-course-category-block__title">Microsoft certifications</h2>
+                                <p class="online-course-category-block__lead">Microsoft 365, Azure fundamentals, Power Platform, and security fundamentals.</p>
+                            </div>
+                            <div class="online-courses-grid">
+                        <div class="online-course-card" data-online-category="microsoft" data-course="Microsoft Office Specialist (with Exam Voucher)">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Microsoft Office Specialist</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Microsoft Office Specialist (with Exam Voucher)">Enroll Now</a>
+                            </div>
                         </div>
-                        <div class="online-course-card" data-course="Diploma in Computing & Networking">
-                            <h3 class="online-course-title">Diploma in Computing & Networking</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in Computing & Networking">Apply Now</button>
+                        <div class="online-course-card" data-online-category="microsoft" data-course="Microsoft Certified: AI-900 Azure AI Fundamentals">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Microsoft AI-900 Azure AI Fundamentals</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Microsoft Certified: AI-900 Azure AI Fundamentals">Enroll Now</a>
+                            </div>
                         </div>
-                        <div class="online-course-card" data-course="Diploma in IT with Business Management">
-                            <h3 class="online-course-title">Diploma in IT with Business Management</h3>
-                            <p class="online-course-duration">Duration: 2 Years | Mode: Online / Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Diploma in IT with Business Management">Apply Now</button>
+                            </div>
+                        </section>
+                        <section class="online-course-category-block" data-online-category-section="cisco" aria-labelledby="oc-cat-cisco">
+                            <div class="online-course-category-block__head">
+                                <h2 id="oc-cat-cisco" class="online-course-category-block__title">Cisco networking &amp; support</h2>
+                                <p class="online-course-category-block__lead">Cisco Certified Support Technician (CCST) pathways.</p>
+                            </div>
+                            <div class="online-courses-grid">
+                        <div class="online-course-card" data-online-category="cisco" data-course="Cisco Certified Support Technician (IT Support)">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Cisco CCST - IT Support</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Cisco Certified Support Technician (IT Support)">Enroll Now</a>
+                            </div>
                         </div>
+                        <div class="online-course-card" data-online-category="cisco" data-course="Cisco Certified Support Technician (Cybersecurity)">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">Cisco CCST - Cybersecurity</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="Cisco Certified Support Technician (Cybersecurity)">Enroll Now</a>
+                            </div>
+                        </div>
+                            </div>
+                        </section>
+                        <section class="online-course-category-block" data-online-category-section="autodesk" aria-labelledby="oc-cat-autodesk">
+                            <div class="online-course-category-block__head">
+                                <h2 id="oc-cat-autodesk" class="online-course-category-block__title">Autodesk design</h2>
+                                <p class="online-course-category-block__lead">Professional CAD and BIM software credentials.</p>
+                            </div>
+                            <div class="online-courses-grid">
+                        <div class="online-course-card" data-online-category="autodesk" data-course="AutoDesk Certified User - Revit Architecture">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">AutoDesk Revit Architecture</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="AutoDesk Certified User - Revit Architecture">Enroll Now</a>
+                            </div>
+                        </div>
+                        <div class="online-course-card" data-online-category="autodesk" data-course="AutoDesk Certified User - AutoCAD">
+                            <div class="online-course-card__hero"><div class="online-course-card__price-tag" aria-label="Course fees"><span class="online-course-card__price-tag__value">NLe 1000</span></div></div>
+                            <div class="online-course-card__badge" aria-live="polite" aria-label="Course rating"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><span class="online-course-card__badge-average">—</span><span class="online-course-card__badge-count-wrap" hidden>(<span class="online-course-card__badge-count">0</span>)</span><button type="button" class="online-course-card__rate-btn">Rate</button></div>
+                            <div class="online-course-card__body">
+                            <h3 class="online-course-title">AutoDesk AutoCAD</h3>
+                            <div class="online-course-card__meta">
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Structured learning</span>
+                                <span class="online-course-card__meta-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Your pace</span>
+                            </div>
+                            <a class="btn btn-primary online-course-card__enroll" data-course-name="AutoDesk Certified User - AutoCAD">Enroll Now</a>
+                            </div>
+                        </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
 
-                <!-- Certificate Programmes Section -->
-                <div class="program-category">
-                    <div class="category-header">
-                        <h2 class="category-title">Certificate Programmes</h2>
-                        <p class="category-description">Professional certificates to validate your expertise and enhance your credentials.</p>
-                    </div>
-                    <div class="online-courses-grid">
-                        <div class="online-course-card" data-course="Digital Marketing with Meta Certified">
-                            <h3 class="online-course-title">Digital Marketing with Meta Certified</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Digital Marketing with Meta Certified">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Data Analyst">
-                            <h3 class="online-course-title">Data Analyst</h3>
-                            <p class="online-course-duration">Duration: 12 Weeks | Mode: Online / Offline</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Data Analyst">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Front End Web Development">
-                            <h3 class="online-course-title">Front End Web Development</h3>
-                            <p class="online-course-duration">Duration: 8 Weeks | Mode: Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Front End Web Development">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Back End Web Development">
-                            <h3 class="online-course-title">Back End Web Development</h3>
-                            <p class="online-course-duration">Duration: 10 Weeks | Mode: Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Back End Web Development">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Full Stack Development">
-                            <h3 class="online-course-title">Full Stack Development</h3>
-                            <p class="online-course-duration">Duration: 14 Weeks | Mode: Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Full Stack Development">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="AI Prompt Engineering For Professionals">
-                            <h3 class="online-course-title">AI Prompt Engineering For Professionals</h3>
-                            <p class="online-course-duration">Duration: 3 Weeks | Mode: Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="AI Prompt Engineering For Professionals">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="AI for Web Design">
-                            <h3 class="online-course-title">AI for Web Design</h3>
-                            <p class="online-course-duration">Duration: 8 Weeks | Mode: Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="AI for Web Design">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Office Specialist (with Exam Voucher)">
-                            <h3 class="online-course-title">Microsoft Office Specialist</h3>
-                            <p class="online-course-duration">Duration: 5 Weeks | Mode: Hybrid</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Office Specialist (with Exam Voucher)">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Cisco Certified Support Technician (IT Support)">
-                            <h3 class="online-course-title">Cisco CCST - IT Support</h3>
-                            <p class="online-course-duration">Duration: 16 Weeks | Mode: Online / Tutor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Cisco Certified Support Technician (IT Support)">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Cisco Certified Support Technician (Cybersecurity)">
-                            <h3 class="online-course-title">Cisco CCST - Cybersecurity</h3>
-                            <p class="online-course-duration">Duration: 16 Weeks | Mode: Online / Tutor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Cisco Certified Support Technician (Cybersecurity)">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Cisco Certified Support Technician (Networking)">
-                            <h3 class="online-course-title">Cisco CCST - Networking</h3>
-                            <p class="online-course-duration">Duration: 16 Weeks | Mode: Online / Tutor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Cisco Certified Support Technician (Networking)">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="AutoDesk Certified User - Revit Architecture">
-                            <h3 class="online-course-title">AutoDesk Revit Architecture</h3>
-                            <p class="online-course-duration">Duration: 16 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="AutoDesk Certified User - Revit Architecture">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="AutoDesk Certified User - AutoCAD">
-                            <h3 class="online-course-title">AutoDesk AutoCAD</h3>
-                            <p class="online-course-duration">Duration: 16 Weeks | Mode: Online / Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="AutoDesk Certified User - AutoCAD">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Certified: AI-900 Azure AI Fundamentals">
-                            <h3 class="online-course-title">Microsoft AI-900 Azure AI Fundamentals</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Certified: AI-900 Azure AI Fundamentals">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Certified: AZ-900 Azure Fundamentals">
-                            <h3 class="online-course-title">Microsoft AZ-900 Azure Fundamentals</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Certified: AZ-900 Azure Fundamentals">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Certified: DP-900 Azure Data Fundamentals">
-                            <h3 class="online-course-title">Microsoft DP-900 Azure Data Fundamentals</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Certified: DP-900 Azure Data Fundamentals">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Certified: MS-900 Microsoft 365 Fundamentals">
-                            <h3 class="online-course-title">Microsoft MS-900 Microsoft 365 Fundamentals</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Certified: MS-900 Microsoft 365 Fundamentals">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Certified: PL-900 Power Platform Fundamentals">
-                            <h3 class="online-course-title">Microsoft PL-900 Power Platform Fundamentals</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Certified: PL-900 Power Platform Fundamentals">Apply Now</button>
-                        </div>
-                        <div class="online-course-card" data-course="Microsoft Certified: SC-900 Security, Compliance, and Identity Fundamentals">
-                            <h3 class="online-course-title">Microsoft SC-900 Security & Compliance</h3>
-                            <p class="online-course-duration">Duration: 4 Weeks | Mode: Instructor-Led</p>
-                            <button class="btn btn-primary btn-apply" data-course-name="Microsoft Certified: SC-900 Security, Compliance, and Identity Fundamentals">Apply Now</button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
     </main>
 
-    <!-- Enrollment Modal -->
-    <div id="enrollmentModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <h2 class="modal-title">Course Enrollment</h2>
-            <div style="text-align: center; padding: var(--spacing-lg) 0;">
-                <p style="margin-bottom: var(--spacing-md);">Ready to enroll? Click the button below to access our online application portal.</p>
-                <a href="http://webportal.kns.edu.sl/register" target="_blank" class="btn btn-primary" style="display: inline-block; padding: var(--spacing-md) var(--spacing-xl); font-size: 1.1rem; text-decoration: none; min-width: 200px;">
-                    Apply Now →
-                </a>
+    <div id="ocRatingModalRoot" class="oc-rating-modal-root" hidden aria-hidden="true">
+        <div class="oc-rating-modal-backdrop" data-oc-rating-close tabindex="-1" aria-hidden="true"></div>
+        <div class="oc-rating-modal" role="dialog" aria-modal="true" aria-labelledby="ocRatingModalTitle">
+            <button type="button" class="oc-rating-modal__close" data-oc-rating-close aria-label="Close">&times;</button>
+            <h2 id="ocRatingModalTitle" class="oc-rating-modal__title">Rate this course</h2>
+            <p class="oc-rating-modal__course" id="ocRatingModalCourseName"></p>
+            <p class="oc-rating-modal__label">Your rating</p>
+            <div class="oc-rating-stars" id="ocRatingStarRow" role="group" aria-label="Star rating from 1 to 5"></div>
+            <label class="oc-rating-modal__field-label" for="ocRatingComment">Comment (optional)</label>
+            <textarea id="ocRatingComment" class="oc-rating-modal__textarea" rows="3" maxlength="2000" placeholder="What did you think of the course?"></textarea>
+            <label class="oc-rating-modal__field-label" for="ocRatingEmail">Email (optional)</label>
+            <input type="email" id="ocRatingEmail" class="oc-rating-modal__input" maxlength="200" placeholder="you@example.com" autocomplete="email">
+            <p class="oc-rating-modal__error" id="ocRatingModalError" hidden role="alert"></p>
+            <div class="oc-rating-modal__actions">
+                <button type="button" class="btn btn-secondary" data-oc-rating-close>Cancel</button>
+                <button type="button" class="btn btn-primary" id="ocRatingSubmit" disabled>Submit rating</button>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
@@ -285,7 +323,6 @@
         </div>
     </footer>
 
-    <!-- Fixed Side Buttons - Apply and Requirements -->
     <div class="side-buttons-container">
         <a href="http://webportal.kns.edu.sl/register" target="_blank" class="side-btn side-btn-apply" title="Apply Now">
             <span class="side-btn-text">Apply here</span>
@@ -299,9 +336,17 @@
                 <path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
             </svg>
         </a>
+        <a href="online-courses.html" class="side-btn side-btn-online" title="Online Courses">
+            <span class="side-btn-text">Online Courses</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+        </a>
     </div>
 
+    <script src="config.js"></script>
+    <script src="online-course-ratings.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
-
