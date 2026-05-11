@@ -1,6 +1,6 @@
 /**
  * Loads online course cards from GET /api/online-courses (Supabase via server.js).
- * Run database/supabase_online_courses.sql in Supabase, then edit public.online_courses / online_course_categories.
+ * Expects Supabase tables public.online_course_categories and public.online_courses (configure in the Supabase dashboard).
  */
 (function () {
     'use strict';
@@ -302,7 +302,7 @@
                 if (!courses.length) {
                     setError(
                         result.data.message ||
-                            'No courses in the catalog yet. Add rows in Supabase (online_courses) or run database/supabase_online_courses.sql.'
+                            'No courses in the catalog yet. Add rows in Supabase (online_courses / online_course_categories).'
                     );
                     document.dispatchEvent(new CustomEvent('kns-online-courses-loaded', { detail: { count: 0 } }));
                     return;

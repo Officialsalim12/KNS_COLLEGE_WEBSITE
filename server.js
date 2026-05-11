@@ -555,7 +555,7 @@ app.get('/api/online-courses', async (req, res) => {
                     success: true,
                     categories: [],
                     courses: [],
-                    message: 'Catalog tables not found; run database/supabase_online_courses.sql in Supabase.'
+                    message: 'Catalog tables not found; create online_course_categories and online_courses in Supabase.'
                 });
             }
             console.error('online-courses GET categories:', catErr);
@@ -575,7 +575,7 @@ app.get('/api/online-courses', async (req, res) => {
                     success: true,
                     categories: [],
                     courses: [],
-                    message: 'Catalog tables not found; run database/supabase_online_courses.sql in Supabase.'
+                    message: 'Catalog tables not found; create online_course_categories and online_courses in Supabase.'
                 });
             }
             console.error('online-courses GET courses:', courseErr);
@@ -617,7 +617,7 @@ app.get('/api/online-course-ratings', async (req, res) => {
             .select('course_key, stars');
         if (error) {
             if (error.code === 'PGRST116' || error.code === '42P01') {
-                return res.json({ success: true, ratings: [], message: 'Ratings table not found; run database/supabase_online_course_ratings.sql in Supabase.' });
+                return res.json({ success: true, ratings: [], message: 'Ratings table not found; create online_course_ratings in Supabase.' });
             }
             console.error('online-course-ratings GET:', error);
             return res.status(500).json({ success: false, error: 'Failed to load ratings' });
@@ -680,7 +680,7 @@ app.post('/api/online-course-ratings', async (req, res) => {
             if (insertError.code === 'PGRST116' || insertError.code === '42P01') {
                 return res.status(500).json({
                     success: false,
-                    error: 'Ratings storage is not set up yet. Run database/supabase_online_course_ratings.sql in Supabase.'
+                    error: 'Ratings storage is not set up yet. Create the online_course_ratings table in Supabase.'
                 });
             }
             return res.status(500).json({ success: false, error: 'Failed to save rating' });
