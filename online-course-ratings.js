@@ -31,15 +31,9 @@
     function networkErrorMessage(err) {
         var msg = (err && err.message) || '';
         if (msg === 'Failed to fetch' || err instanceof TypeError) {
-            return (
-                'Could not reach the ratings server. If you opened this page as a file from your computer, ' +
-                'use the website URL instead, or run the local API (npm start) when testing on localhost. ' +
-                'Otherwise confirm the API is deployed and your network allows requests to ' +
-                CONFIG.API_BASE_URL +
-                '.'
-            );
+            return 'We could not reach the server. Check your internet connection and try again in a moment.';
         }
-        return msg || 'Something went wrong.';
+        return msg || 'We could not save your rating. Please try again later.';
     }
 
     const modalRoot = document.getElementById('ocRatingModalRoot');
@@ -49,6 +43,9 @@
     const emailEl = document.getElementById('ocRatingEmail');
     const errorEl = document.getElementById('ocRatingModalError');
     const submitBtn = document.getElementById('ocRatingSubmit');
+    const formPanel = document.getElementById('ocRatingFormPanel');
+    const successPanel = document.getElementById('ocRatingSuccessPanel');
+    const successDoneBtn = document.getElementById('ocRatingSuccessDone');
 
     let activeCourseKey = '';
     let activeDisplayTitle = '';
@@ -124,6 +121,19 @@
         }
     }
 
+    function resetRatingView() {
+        if (formPanel) formPanel.hidden = false;
+        if (successPanel) successPanel.hidden = true;
+    }
+
+    function showRatingSuccess() {
+        if (formPanel) formPanel.hidden = true;
+        if (successPanel) successPanel.hidden = false;
+        if (successDoneBtn && typeof successDoneBtn.focus === 'function') {
+            successDoneBtn.focus();
+        }
+    }
+
     function buildStarButtons() {
         if (!starRow) return;
         starRow.innerHTML = '';
@@ -173,6 +183,7 @@
         if (commentEl) commentEl.value = '';
         if (emailEl) emailEl.value = '';
         setModalError('');
+        resetRatingView();
         if (submitBtn) submitBtn.disabled = true;
         buildStarButtons();
         modalRoot.hidden = false;
@@ -188,6 +199,11 @@
         modalRoot.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         activeCourseKey = '';
+        resetRatingView();
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submit rating';
+        }
         if (lastFocus && typeof lastFocus.focus === 'function') {
             lastFocus.focus();
         }
@@ -231,7 +247,11 @@
                     );
                     if (card) applyStatsToCard(card, result.data.rating);
                 }
-                closeModal();
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Submit rating';
+                }
+                showRatingSuccess();
             })
             .catch(function (err) {
                 setModalError(networkErrorMessage(err));
@@ -272,6 +292,12 @@
 
     if (submitBtn) {
         submitBtn.addEventListener('click', submitRating);
+    }
+
+    if (successDoneBtn) {
+        successDoneBtn.addEventListener('click', function () {
+            closeModal();
+        });
     }
 
     if (document.readyState === 'loading') {

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Payment received — KNS College</title>
+    <title>Checkout cancelled — KNS College</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="page-checkout page-checkout--v2 page-checkout-result page-checkout-result--success">
+<body class="page-checkout page-checkout--v2 page-checkout-result page-checkout-result--cancelled">
     <header class="top-header">
         <div class="container">
             <div class="header-content">
@@ -51,28 +51,22 @@
         <section class="checkout-v2-hero checkout-result-hero">
             <div class="container">
                 <a class="checkout-v2-back" href="online-courses.html">← Online courses</a>
-                <div class="checkout-result-badge" aria-hidden="true">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                <div class="checkout-result-badge checkout-result-badge--muted" aria-hidden="true">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
                 </div>
-                <h1 class="checkout-v2-hero__title">Payment received</h1>
-                <p class="checkout-v2-hero__subtitle">Thank you for your payment. Your enrollment is being processed. You will receive confirmation from our admissions team as soon as your record is updated.</p>
+                <h1 class="checkout-v2-hero__title">Checkout cancelled</h1>
+                <p class="checkout-v2-hero__subtitle">You left the payment screen before completing your transaction. No payment has been taken. You can return to checkout whenever you are ready.</p>
             </div>
         </section>
 
         <section class="content-section checkout-v2-section">
             <div class="container">
-                <div class="checkout-result-card">
+                <div class="checkout-result-card checkout-result-card--cancelled">
                     <p id="checkout-result-course-line" class="checkout-result-course" hidden></p>
-                    <h2 class="checkout-result-card__title">What happens next</h2>
-                    <ol class="checkout-result-steps">
-                        <li>Keep your Monime or mobile-money receipt for your records.</li>
-                        <li>Watch your email (including spam) for a message from KNS admissions.</li>
-                        <li>Complete registration on the <a href="http://webportal.kns.edu.sl/register" target="_blank" rel="noopener noreferrer">student portal</a> if you have not already.</li>
-                        <li>Questions about access or materials? Contact <a href="mailto:admission@kns.edu.sl">admission@kns.edu.sl</a> or WhatsApp <a href="https://wa.me/23279422442" target="_blank" rel="noopener noreferrer">+232 79 422 442</a>.</li>
-                    </ol>
+                    <p class="checkout-result-lead">If you closed the window by mistake, tap <strong>Try checkout again</strong> below. For fee plans or payment support, contact admissions.</p>
                     <div class="checkout-result-actions">
-                        <a class="checkout-v2-submit checkout-result-actions__primary" href="online-courses.html">Back to online courses</a>
-                        <a class="btn btn-secondary checkout-result-actions__secondary" href="admissions.html">Admissions information</a>
+                        <a id="checkout-cancelled-retry" class="checkout-v2-submit checkout-result-actions__primary" href="checkout.html">Try checkout again</a>
+                        <a class="btn btn-secondary checkout-result-actions__secondary" href="online-courses.html">Browse online courses</a>
                     </div>
                 </div>
             </div>

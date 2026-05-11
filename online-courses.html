@@ -259,16 +259,28 @@
             <button type="button" class="oc-rating-modal__close" data-oc-rating-close aria-label="Close">&times;</button>
             <h2 id="ocRatingModalTitle" class="oc-rating-modal__title">Rate this course</h2>
             <p class="oc-rating-modal__course" id="ocRatingModalCourseName"></p>
-            <p class="oc-rating-modal__label">Your rating</p>
-            <div class="oc-rating-stars" id="ocRatingStarRow" role="group" aria-label="Star rating from 1 to 5"></div>
-            <label class="oc-rating-modal__field-label" for="ocRatingComment">Comment (optional)</label>
-            <textarea id="ocRatingComment" class="oc-rating-modal__textarea" rows="3" maxlength="2000" placeholder="What did you think of the course?"></textarea>
-            <label class="oc-rating-modal__field-label" for="ocRatingEmail">Email (optional)</label>
-            <input type="email" id="ocRatingEmail" class="oc-rating-modal__input" maxlength="200" placeholder="you@example.com" autocomplete="email">
-            <p class="oc-rating-modal__error" id="ocRatingModalError" hidden role="alert"></p>
-            <div class="oc-rating-modal__actions">
-                <button type="button" class="btn btn-secondary" data-oc-rating-close>Cancel</button>
-                <button type="button" class="btn btn-primary" id="ocRatingSubmit" disabled>Submit rating</button>
+            <div id="ocRatingFormPanel" class="oc-rating-modal__form-panel">
+                <p class="oc-rating-modal__label">Your rating</p>
+                <div class="oc-rating-stars" id="ocRatingStarRow" role="group" aria-label="Star rating from 1 to 5"></div>
+                <label class="oc-rating-modal__field-label" for="ocRatingComment">Comment (optional)</label>
+                <textarea id="ocRatingComment" class="oc-rating-modal__textarea" rows="3" maxlength="2000" placeholder="What did you think of the course?"></textarea>
+                <label class="oc-rating-modal__field-label" for="ocRatingEmail">Email (optional)</label>
+                <input type="email" id="ocRatingEmail" class="oc-rating-modal__input" maxlength="200" placeholder="you@example.com" autocomplete="email">
+                <p class="oc-rating-modal__error" id="ocRatingModalError" hidden role="alert"></p>
+                <div class="oc-rating-modal__actions">
+                    <button type="button" class="btn btn-secondary" data-oc-rating-close>Cancel</button>
+                    <button type="button" class="btn btn-primary" id="ocRatingSubmit" disabled>Submit rating</button>
+                </div>
+            </div>
+            <div id="ocRatingSuccessPanel" class="oc-rating-modal__success" hidden role="status" aria-live="polite">
+                <div class="oc-rating-modal__success-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                </div>
+                <h3 class="oc-rating-modal__success-title">Thank you</h3>
+                <p class="oc-rating-modal__success-text">
+                    Your rating has been submitted successfully. It will appear on this course card shortly and helps prospective students choose the right programme. We appreciate you taking the time to share your feedback with KNS College.
+                </p>
+                <button type="button" class="btn btn-primary oc-rating-modal__success-done" id="ocRatingSuccessDone">Close</button>
             </div>
         </div>
     </div>

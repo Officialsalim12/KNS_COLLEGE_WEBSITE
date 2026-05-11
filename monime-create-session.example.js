@@ -27,8 +27,8 @@ async function demoCreateSession() {
         name: "KNS College — Online course enrollment",
         description: "Example checkout session for documentation",
         reference: "kns-demo-" + Date.now(),
-        successUrl: "https://example.com/checkout-success.html",
-        cancelUrl: "https://example.com/checkout.html",
+        successUrl: "https://example.com/checkout-success.html?course=Example&price=NLe%201000",
+        cancelUrl: "https://example.com/checkout-cancelled.html?course=Example&price=NLe%201000",
         lineItems: [
             {
                 type: "custom",

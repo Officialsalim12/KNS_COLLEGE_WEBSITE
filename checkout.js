@@ -134,9 +134,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 phone: phoneEl.value.trim(),
                 courseName: courseDecoded,
                 priceLabel: priceLabel,
-                successUrl: absoluteUrl("checkout-success.html"),
+                successUrl: absoluteUrl(
+                    "checkout-success.html?course=" +
+                        encodeURIComponent(courseDecoded) +
+                        "&price=" +
+                        encodeURIComponent(priceLabel)
+                ),
                 cancelUrl: absoluteUrl(
-                    "checkout.html?course=" + encodeURIComponent(courseDecoded) + "&price=" + encodeURIComponent(priceLabel)
+                    "checkout-cancelled.html?course=" +
+                        encodeURIComponent(courseDecoded) +
+                        "&price=" +
+                        encodeURIComponent(priceLabel)
                 ),
                 idempotencyKey: idempotencyKey,
                 amountMinor: amountMinor,
