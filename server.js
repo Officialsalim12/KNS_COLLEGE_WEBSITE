@@ -385,6 +385,7 @@ app.get('/api/health', (req, res) => {
         monime_token_mode: MONIME_TOKEN_MODE,
         monime_require_live_token: MONIME_REQUIRE_LIVE_TOKEN,
         features: {
+            online_course_catalog: true,
             online_course_ratings: true,
             monime_checkout_session: true
         }
@@ -538,6 +539,72 @@ async function fetchRatingAggregateForCourse(courseKey) {
         count
     };
 }
+
+/**
+ * Public catalog for the online courses page (content from Supabase).
+ */
+app.get('/api/online-courses', async (req, res) => {
+    try {
+        const { data: catRows, error: catErr } = await supabase
+            .from('online_course_categories')
+            .select('slug, section_title, section_lead, sort_order')
+            .order('sort_order', { ascending: true });
+        if (catErr) {
+            if (catErr.code === 'PGRST116' || catErr.code === '42P01') {
+                return res.json({
+                    success: true,
+                    categories: [],
+                    courses: [],
+                    message: 'Catalog tables not found; run database/supabase_online_courses.sql in Supabase.'
+                });
+            }
+            console.error('online-courses GET categories:', catErr);
+            return res.status(500).json({ success: false, error: 'Failed to load course categories' });
+        }
+
+        const { data: courseRows, error: courseErr } = await supabase
+            .from('online_courses')
+            .select(
+                'category_slug, course_key, display_title, enroll_course_name, price_label, structured_text, pace_text, sort_order, is_active'
+            )
+            .eq('is_active', true)
+            .order('sort_order', { ascending: true });
+        if (courseErr) {
+            if (courseErr.code === 'PGRST116' || courseErr.code === '42P01') {
+                return res.json({
+                    success: true,
+                    categories: [],
+                    courses: [],
+                    message: 'Catalog tables not found; run database/supabase_online_courses.sql in Supabase.'
+                });
+            }
+            console.error('online-courses GET courses:', courseErr);
+            return res.status(500).json({ success: false, error: 'Failed to load courses' });
+        }
+
+        const categories = (catRows || []).map((r) => ({
+            slug: r.slug,
+            sectionTitle: r.section_title,
+            sectionLead: r.section_lead,
+            sortOrder: r.sort_order
+        }));
+        const courses = (courseRows || []).map((r) => ({
+            categorySlug: r.category_slug,
+            courseKey: r.course_key,
+            displayTitle: r.display_title,
+            enrollCourseName: r.enroll_course_name,
+            priceLabel: r.price_label,
+            structuredText: r.structured_text,
+            paceText: r.pace_text,
+            sortOrder: r.sort_order
+        }));
+
+        res.json({ success: true, categories, courses });
+    } catch (err) {
+        console.error('online-courses GET:', err);
+        res.status(500).json({ success: false, error: 'Failed to load online courses' });
+    }
+});
 
 app.get('/api/online-course-ratings', async (req, res) => {
     try {
@@ -2149,6 +2216,7 @@ app.use('/api/*', (req, res) => {
             'POST /api/scholarship-applications',
             'GET /api/scholarship-applications',
             'GET /api/stats',
+            'GET /api/online-courses',
             'GET /api/online-course-ratings',
             'POST /api/online-course-ratings',
             'POST /api/monime/checkout-session'

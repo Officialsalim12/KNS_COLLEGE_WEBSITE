@@ -175,6 +175,7 @@ const CONFIG = {
          * See monime-create-session.example.js in this project for a reference implementation.
          */
         MONIME_CHECKOUT_SESSION: '/api/monime/checkout-session',
+        ONLINE_COURSES: '/api/online-courses',
         ONLINE_COURSE_RATINGS: '/api/online-course-ratings'
     },
 

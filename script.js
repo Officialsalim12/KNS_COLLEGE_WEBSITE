@@ -326,8 +326,14 @@ document.addEventListener('DOMContentLoaded', function() {
             section.style.display = any ? '' : 'none';
         });
 
+        const catalogErrEl = document.getElementById('onlineCoursesCatalogError');
+        const catalogLoadFailed =
+            catalogErrEl && !catalogErrEl.hidden && (catalogErrEl.textContent || '').trim().length > 0;
+        const catalogStillLoading =
+            document.querySelector('#onlineCoursesCategoryRoot .online-courses-catalog-loading') !== null;
+
         if (onlineCoursesEmptyHint) {
-            onlineCoursesEmptyHint.hidden = visibleCount > 0;
+            onlineCoursesEmptyHint.hidden = visibleCount > 0 || catalogLoadFailed || catalogStillLoading;
         }
         if (onlineCoursesFilterStatus) {
             onlineCoursesFilterStatus.textContent =
@@ -354,6 +360,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             applyOnlineCoursesFilter();
         });
+    });
+
+    function refreshOnlineCourseEnrollLinks() {
+        document.querySelectorAll('a.online-course-card__enroll[data-course-name]').forEach((link) => {
+            const name = link.getAttribute('data-course-name');
+            if (!name) return;
+            const priceLabel =
+                link.getAttribute('data-price-label') ||
+                (typeof CONFIG !== 'undefined' && CONFIG.CHECKOUT_DISPLAY_PRICE
+                    ? CONFIG.CHECKOUT_DISPLAY_PRICE
+                    : 'NLe 1000');
+            link.href =
+                'checkout.html?course=' +
+                encodeURIComponent(name) +
+                '&price=' +
+                encodeURIComponent(priceLabel);
+        });
+    }
+
+    document.addEventListener('kns-online-courses-loaded', function () {
+        if (document.body.classList.contains('page-online-courses')) {
+            refreshOnlineCourseEnrollLinks();
+            applyOnlineCoursesFilter();
+        }
     });
 
     if (document.body.classList.contains('page-online-courses')) {
@@ -476,19 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.querySelectorAll('a.online-course-card__enroll[data-course-name]').forEach((link) => {
-        const name = link.getAttribute('data-course-name');
-        if (!name) return;
-        const priceLabel =
-            typeof CONFIG !== 'undefined' && CONFIG.CHECKOUT_DISPLAY_PRICE
-                ? CONFIG.CHECKOUT_DISPLAY_PRICE
-                : 'NLe 1000';
-        link.href =
-            'checkout.html?course=' +
-            encodeURIComponent(name) +
-            '&price=' +
-            encodeURIComponent(priceLabel);
-    });
+    refreshOnlineCourseEnrollLinks();
     
     function closeEnrollmentModal() {
         if (enrollmentModal) {

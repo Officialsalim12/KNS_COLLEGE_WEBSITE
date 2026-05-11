@@ -11347,3 +11347,22 @@ code {
 .oc-rating-modal__success-done {
     min-width: 8rem;
 }
+
+/* Online courses catalog (Supabase-driven) */
+.online-courses-catalog-loading {
+    margin: 1rem 0 2rem;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #64748b;
+}
+
+.online-courses-catalog-error {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}

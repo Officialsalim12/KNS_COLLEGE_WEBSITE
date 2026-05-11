@@ -300,9 +300,18 @@
         });
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', fetchRatings);
-    } else {
-        fetchRatings();
+    function scheduleFetchRatings() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fetchRatings);
+        } else {
+            fetchRatings();
+        }
     }
+
+    scheduleFetchRatings();
+
+    document.addEventListener('kns-online-courses-loaded', function () {
+        fetchRatings();
+    });
 })();
+
