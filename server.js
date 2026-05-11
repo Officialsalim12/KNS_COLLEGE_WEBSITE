@@ -2156,6 +2156,15 @@ app.use('/api/*', (req, res) => {
     });
 });
 
+/**
+ * Monime (and some payment flows) may POST to successUrl / cancelUrl. express.static only
+ * serves GET/HEAD for files, which otherwise yields HTTP 405. Redirect POST → GET same path + query.
+ */
+app.post(['/checkout-success.html', '/checkout-cancelled.html'], (req, res) => {
+    const loc = req.originalUrl && req.originalUrl.startsWith('/') ? req.originalUrl : req.url || '/';
+    res.redirect(303, loc);
+});
+
 // Serve static files (HTML, CSS, JS) from root directory
 // IMPORTANT: This must come AFTER all API routes to prevent conflicts
 app.use(express.static(__dirname));
