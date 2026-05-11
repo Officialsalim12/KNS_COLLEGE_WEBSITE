@@ -99,6 +99,10 @@
         const enrollName = course.enrollCourseName || courseKey;
         const title = course.displayTitle || courseKey;
         const price = course.priceLabel || 'NLe 1000';
+        const amountMinor =
+            course.amountSleMinor != null && Number.isFinite(Number(course.amountSleMinor))
+                ? Math.round(Number(course.amountSleMinor))
+                : 100000;
         const structured = course.structuredText || 'Structured learning';
         const pace = course.paceText || 'Your pace';
 
@@ -160,6 +164,7 @@
         enroll.className = 'btn btn-primary online-course-card__enroll';
         enroll.setAttribute('data-course-name', enrollName);
         enroll.setAttribute('data-price-label', price);
+        enroll.setAttribute('data-amount-sle-minor', String(amountMinor));
         enroll.href = '#';
         enroll.textContent = 'Enroll Now';
         body.appendChild(enroll);
@@ -177,11 +182,16 @@
                 link.getAttribute('data-price-label') ||
                 (typeof CONFIG !== 'undefined' && CONFIG.CHECKOUT_DISPLAY_PRICE) ||
                 'NLe 1000';
-            link.href =
+            var am = link.getAttribute('data-amount-sle-minor');
+            var href =
                 'checkout.html?course=' +
                 encodeURIComponent(name) +
                 '&price=' +
                 encodeURIComponent(price);
+            if (am && /^\d+$/.test(am)) {
+                href += '&amount_minor=' + encodeURIComponent(am);
+            }
+            link.href = href;
         });
     }
 

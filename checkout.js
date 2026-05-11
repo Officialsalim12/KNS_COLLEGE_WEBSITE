@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const params = new URLSearchParams(window.location.search);
     const courseParam = params.get("course");
     const priceParam = params.get("price");
+    const amountMinorParam = params.get("amount_minor");
 
     const courseDisplay = document.getElementById("checkout-course-display");
     const priceDisplay = document.getElementById("checkout-price-display");
@@ -11,10 +12,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("checkoutForm");
     const payBtn = document.getElementById("checkout-pay-btn");
 
-    const amountMinor =
+    let amountMinor =
         typeof CONFIG !== "undefined" && typeof CONFIG.CHECKOUT_AMOUNT_SLE_MINOR === "number"
             ? CONFIG.CHECKOUT_AMOUNT_SLE_MINOR
             : 100000;
+    if (amountMinorParam != null && String(amountMinorParam).trim() !== "") {
+        const parsed = parseInt(String(amountMinorParam).trim(), 10);
+        if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 100000000) {
+            amountMinor = parsed;
+        }
+    }
 
     const defaultPriceLabel =
         typeof CONFIG !== "undefined" && CONFIG.CHECKOUT_DISPLAY_PRICE ? CONFIG.CHECKOUT_DISPLAY_PRICE : "NLe 1000";

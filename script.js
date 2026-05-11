@@ -371,11 +371,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 (typeof CONFIG !== 'undefined' && CONFIG.CHECKOUT_DISPLAY_PRICE
                     ? CONFIG.CHECKOUT_DISPLAY_PRICE
                     : 'NLe 1000');
-            link.href =
+            const am = link.getAttribute('data-amount-sle-minor');
+            let href =
                 'checkout.html?course=' +
                 encodeURIComponent(name) +
                 '&price=' +
                 encodeURIComponent(priceLabel);
+            if (am && /^\d+$/.test(am)) {
+                href += '&amount_minor=' + encodeURIComponent(am);
+            }
+            link.href = href;
         });
     }
 

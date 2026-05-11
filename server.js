@@ -565,7 +565,7 @@ app.get('/api/online-courses', async (req, res) => {
         const { data: courseRows, error: courseErr } = await supabase
             .from('online_courses')
             .select(
-                'category_slug, course_key, display_title, enroll_course_name, price_label, structured_text, pace_text, sort_order, is_active'
+                'category_slug, course_key, display_title, enroll_course_name, price_label, structured_text, pace_text, amount_sle_minor, sort_order, is_active'
             )
             .eq('is_active', true)
             .order('sort_order', { ascending: true });
@@ -596,6 +596,10 @@ app.get('/api/online-courses', async (req, res) => {
             priceLabel: r.price_label,
             structuredText: r.structured_text,
             paceText: r.pace_text,
+            amountSleMinor:
+                r.amount_sle_minor != null && Number.isFinite(Number(r.amount_sle_minor))
+                    ? Number(r.amount_sle_minor)
+                    : 100000,
             sortOrder: r.sort_order
         }));
 
@@ -706,6 +710,37 @@ function isAllowedMonimeReturnUrl(urlStr) {
     }
 }
 
+/** Monime line-item amount from online_courses when course name matches (server-side; ignores tampered client body). */
+async function lookupOnlineCourseAmountSleMinor(courseNameTrimmed) {
+    const cn = String(courseNameTrimmed || '').trim();
+    if (!cn) return null;
+    try {
+        const { data: byEnroll, error: e1 } = await supabase
+            .from('online_courses')
+            .select('amount_sle_minor')
+            .eq('is_active', true)
+            .eq('enroll_course_name', cn)
+            .maybeSingle();
+        if (!e1 && byEnroll && byEnroll.amount_sle_minor != null) {
+            const n = parseInt(byEnroll.amount_sle_minor, 10);
+            if (Number.isInteger(n) && n >= 1 && n <= 100000000) return n;
+        }
+        const { data: byKey, error: e2 } = await supabase
+            .from('online_courses')
+            .select('amount_sle_minor')
+            .eq('is_active', true)
+            .eq('course_key', cn)
+            .maybeSingle();
+        if (!e2 && byKey && byKey.amount_sle_minor != null) {
+            const n = parseInt(byKey.amount_sle_minor, 10);
+            if (Number.isInteger(n) && n >= 1 && n <= 100000000) return n;
+        }
+    } catch (ignore) {
+        /* table/column may be missing until migration */
+    }
+    return null;
+}
+
 app.post('/api/monime/checkout-session', async (req, res) => {
     try {
         if (!MONIME_ACCESS_TOKEN || !MONIME_SPACE_ID) {
@@ -764,11 +799,21 @@ app.post('/api/monime/checkout-session', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Only SLE currency is supported for this checkout.' });
         }
 
-        const amount = parseInt(amountMinor, 10);
-        if (!Number.isInteger(amount) || amount < 1 || amount > 100000000) {
+        const clientAmount = parseInt(amountMinor, 10);
+        if (!Number.isInteger(clientAmount) || clientAmount < 1 || clientAmount > 100000000) {
             return res.status(400).json({
                 success: false,
                 error: 'Invalid amountMinor: must be a positive integer (SLE minor units, e.g. 100000 = SLE 1000.00).'
+            });
+        }
+
+        const courseNm = String(courseName).trim();
+        const catalogAmount = await lookupOnlineCourseAmountSleMinor(courseNm);
+        const amount = catalogAmount != null ? catalogAmount : clientAmount;
+        if (!Number.isInteger(amount) || amount < 1 || amount > 100000000) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid charge amount for this course. Check amount_sle_minor in Supabase (online_courses).'
             });
         }
 
