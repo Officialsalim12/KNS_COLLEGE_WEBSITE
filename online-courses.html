@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Online Courses - KNS College</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-online-courses">
+    <header class="top-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <a href="index.html" class="logo">
+                        <img src="images/kns-college-logo.png" alt="KNS College Logo" class="logo-image">
+                        <div class="logo-text-container">
+                            <span class="logo-text">Knowledge</span>
+                            <span class="logo-text">Network</span>
+                            <span class="logo-text">Solutions</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-menu">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li class="has-dropdown">
+                            <a href="Programmes.html">Programmes <span class="dropdown-arrow">▼</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="Programmes.html#train-certify">Train and Certify Courses</a></li>
+                                <li><a href="Programmes.html#diploma">Diploma Programmes</a></li>
+                                <li><a href="Programmes.html#certificate">Certificate Programmes</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="corporate-training.html">Corporate Training</a></li>
+                        <li><a href="certifications.html">Certifications</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="scholarships.html">Scholarships</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="online-courses-toolbar" role="search">
+        <div class="container online-courses-toolbar__inner">
+            <div class="online-courses-toolbar__search-wrap">
+                <label class="visually-hidden" for="onlineCourseSearch">Search online courses</label>
+                <svg class="online-courses-toolbar__search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="search" id="onlineCourseSearch" class="online-courses-toolbar__search-input" placeholder="Search by course name or category…" autocomplete="off" enterkeyhint="search">
+            </div>
+            <div class="online-courses-toolbar__chips" role="group" aria-label="Filter by category">
+                <button type="button" class="oc-filter-chip is-active" data-online-category-filter="all">All</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="business">Business</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="ict">ICT &amp; software</button>
+                <button type="button" class="oc-filter-chip" data-online-category-filter="microsoft">Microsoft &amp; Azure</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content-full">
+        <section class="page-header">
+            <div class="container">
+                <h1 class="page-title">Online Courses</h1>
+                <p class="page-subtitle">Learn from anywhere, anytime with our comprehensive online course offerings</p>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="container">
+                <div class="content-intro">
+                    <p class="content-text" style="text-align: center; margin-bottom: var(--spacing-lg); font-size: 1.1rem;">
+                        Our online courses combine structured learning with flexible scheduling. Enrollment fees are payable securely through mobile money (Orange Money or Afrimoney). Select <strong>Enroll Now</strong> on your chosen course to open checkout and complete your application.
+                    </p>
+                </div>
+
+                <div class="program-category">
+                    <p id="onlineCoursesFilterStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+                    <div id="onlineCoursesEmptyHint" class="online-courses-empty-hint" hidden>No courses match your search or filter.</div>
+                    <p id="onlineCoursesCatalogError" class="online-courses-catalog-error" hidden role="alert"></p>
+                    <div class="online-courses-categories" id="onlineCoursesCategoryRoot">
+                        <p class="online-courses-catalog-loading">Loading courses…</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <div id="ocRatingModalRoot" class="oc-rating-modal-root" hidden aria-hidden="true">
+        <div class="oc-rating-modal-backdrop" data-oc-rating-close tabindex="-1" aria-hidden="true"></div>
+        <div class="oc-rating-modal" role="dialog" aria-modal="true" aria-labelledby="ocRatingModalTitle">
+            <button type="button" class="oc-rating-modal__close" data-oc-rating-close aria-label="Close">&times;</button>
+            <h2 id="ocRatingModalTitle" class="oc-rating-modal__title">Rate this course</h2>
+            <p class="oc-rating-modal__course" id="ocRatingModalCourseName"></p>
+            <div id="ocRatingFormPanel" class="oc-rating-modal__form-panel">
+                <p class="oc-rating-modal__label">Your rating</p>
+                <div class="oc-rating-stars" id="ocRatingStarRow" role="group" aria-label="Star rating from 1 to 5"></div>
+                <label class="oc-rating-modal__field-label" for="ocRatingComment">Comment (optional)</label>
+                <textarea id="ocRatingComment" class="oc-rating-modal__textarea" rows="3" maxlength="2000" placeholder="What did you think of the course?"></textarea>
+                <label class="oc-rating-modal__field-label" for="ocRatingEmail">Email (optional)</label>
+                <input type="email" id="ocRatingEmail" class="oc-rating-modal__input" maxlength="200" placeholder="you@example.com" autocomplete="email">
+                <p class="oc-rating-modal__error" id="ocRatingModalError" hidden role="alert"></p>
+                <div class="oc-rating-modal__actions">
+                    <button type="button" class="btn btn-secondary" data-oc-rating-close>Cancel</button>
+                    <button type="button" class="btn btn-primary" id="ocRatingSubmit" disabled>Submit rating</button>
+                </div>
+            </div>
+            <div id="ocRatingSuccessPanel" class="oc-rating-modal__success" hidden role="status" aria-live="polite">
+                <div class="oc-rating-modal__success-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                </div>
+                <h3 class="oc-rating-modal__success-title">Thank you</h3>
+                <p class="oc-rating-modal__success-text">
+                    Your rating has been submitted successfully. It will appear on this course card shortly and helps prospective students choose the right programme. We appreciate you taking the time to share your feedback with KNS College.
+                </p>
+                <button type="button" class="btn btn-primary oc-rating-modal__success-done" id="ocRatingSuccessDone">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="footer-title">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="Programmes.html">Programmes</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Campus Location</h4>
+                    <ul class="footer-links">
+                        <li>18 Dundas Street</li>
+                        <li>Freetown, Sierra Leone</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://kns.fedena.com/user/dashboard">Student Portal</a></li>
+                        <li><a href="https://kns.fedena.com/library">Library</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Contact</h4>
+                    <ul class="footer-links">
+                        <li>Phone / WhatsApp: +232 79 422 442</li>
+                        <li>Email: admission@kns.edu.sl</li>
+                        <li>Website: www.kns.sl</li>
+                        <li>Location: 18 Dundas Street, Freetown, Sierra Leone</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <span class="separator">|</span>
+                    <a href="#">Terms of Service</a>
+                    <span class="separator">|</span>
+                    <a href="#">Accessibility</a>
+                </div>
+                <p class="copyright">&copy; 2025 KNS College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="side-buttons-container">
+        <a href="http://webportal.kns.edu.sl/register" target="_blank" class="side-btn side-btn-apply" title="Apply Now">
+            <span class="side-btn-text">Apply here</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+        </a>
+        <a href="admissions.html#requirements" class="side-btn side-btn-requirements" title="View Requirements">
+            <span class="side-btn-text">Requirements</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+            </svg>
+        </a>
+        <a href="online-courses.html" class="side-btn side-btn-online" title="Online Courses">
+            <span class="side-btn-text">Online Courses</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+        </a>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="online-courses-catalog.js"></script>
+    <script src="online-course-ratings.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

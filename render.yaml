@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: kns-college-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    # Note: Free tier services spin down after 15 minutes of inactivity
+    # This causes 50+ second cold start delays. Solutions:
+    # 1. Use external monitoring (UptimeRobot, cron-job.org) to ping /api/health every 10-14 minutes
+    # 2. Upgrade to paid plan for always-on service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: PORT is automatically set by Render, no need to specify it
+      # Add these environment variables in Render dashboard:
+      # - SUPABASE_URL (required)
+      # - SUPABASE_ANON_KEY (required)
+      # - SENDGRID_API_KEY (optional - for email notifications)
+      # - SENDGRID_FROM_EMAIL (optional - for email notifications)
+      # - SENDGRID_TO_EMAIL (optional - for email notifications)
+      # - CORS_ORIGIN (optional - defaults to '*' if not set)
+      # - MONIME_ACCESS_TOKEN (Bearer mon_* or mon_test_* — online course checkout)
+      # - MONIME_SPACE_ID (spc-… Space id)
+      # - MONIME_ALLOWED_CHECKOUT_ORIGINS (optional comma-separated site URLs for success/cancel redirects)
+      # - MONIME_VERSION (optional, default caph.2025-08-23)
+      # - MONIME_API_BASE_URL (optional, default https://api.monime.io)
+      # - MONIME_REQUIRE_LIVE_TOKEN=true on production to block mon_test_ sandbox tokens (real payments only)

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Checkout — KNS College</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-checkout page-checkout--v2">
+    <header class="top-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <a href="index.html" class="logo">
+                        <img src="images/kns-college-logo.png" alt="KNS College Logo" class="logo-image">
+                        <div class="logo-text-container">
+                            <span class="logo-text">Knowledge</span>
+                            <span class="logo-text">Network</span>
+                            <span class="logo-text">Solutions</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-menu">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li class="has-dropdown">
+                            <a href="Programmes.html">Programmes <span class="dropdown-arrow">▼</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="Programmes.html#train-certify">Train and Certify Courses</a></li>
+                                <li><a href="Programmes.html#diploma">Diploma Programmes</a></li>
+                                <li><a href="Programmes.html#certificate">Certificate Programmes</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="corporate-training.html">Corporate Training</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="scholarships.html">Scholarships</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content-full checkout-v2-main">
+        <section class="checkout-v2-hero">
+            <div class="container">
+                <a class="checkout-v2-back" href="online-courses.html">← Online courses</a>
+                <h1 class="checkout-v2-hero__title">Checkout</h1>
+                <p class="checkout-v2-hero__subtitle">Confirm your details, then continue to Monime for secure payment. With a <strong>live</strong> Monime token on the server, this checkout collects <strong>real</strong> funds in your Space (test tokens use sandbox only).</p>
+            </div>
+        </section>
+
+        <section class="content-section checkout-v2-section">
+            <div class="container">
+                <div class="checkout-v2-layout">
+                    <div class="checkout-v2-card checkout-v2-card--form">
+                        <h2 class="checkout-v2-card__heading">Your information</h2>
+
+                        <div class="checkout-v2-enrollment" aria-label="Enrollment selection">
+                            <div class="checkout-v2-enrollment__row">
+                                <span class="checkout-v2-enrollment__label">Course</span>
+                                <input type="text" id="checkout-course-display" class="checkout-v2-enrollment__input" readonly tabindex="-1" value="" aria-label="Selected course">
+                            </div>
+                            <div class="checkout-v2-enrollment__row">
+                                <span class="checkout-v2-enrollment__label">Fee</span>
+                                <input type="text" id="checkout-price-display" class="checkout-v2-enrollment__input checkout-v2-enrollment__input--price" readonly tabindex="-1" value="NLe 1000" aria-label="Course fee">
+                            </div>
+                        </div>
+
+                        <form id="checkoutForm" class="checkout-v2-form" novalidate>
+                            <div class="checkout-v2-field">
+                                <label for="checkout-fullname">Full name <span class="checkout-v2-req">*</span></label>
+                                <input id="checkout-fullname" name="fullname" type="text" placeholder="As on your ID" autocomplete="name" required>
+                            </div>
+                            <div class="checkout-v2-field">
+                                <label for="checkout-email">Email <span class="checkout-v2-req">*</span></label>
+                                <input id="checkout-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+                            </div>
+                            <div class="checkout-v2-field">
+                                <label for="checkout-phone">Phone number <span class="checkout-v2-req">*</span></label>
+                                <input id="checkout-phone" name="phone" type="tel" placeholder="+232 …" autocomplete="tel" required>
+                            </div>
+
+                            <div id="checkout-error" class="checkout-v2-error" role="alert" hidden></div>
+
+                            <button type="submit" class="checkout-v2-submit" id="checkout-pay-btn">Continue to payment</button>
+                        </form>
+                    </div>
+
+                    <aside class="checkout-v2-card checkout-v2-card--summary" aria-label="Order summary">
+                        <div class="checkout-v2-summary__glow"></div>
+                        <p class="checkout-v2-summary__eyebrow">Enrollment</p>
+                        <h3 class="checkout-v2-summary__course" id="checkout-summary-title">Course</h3>
+                        <p class="checkout-v2-summary__price" id="checkout-price-line">NLe 1000</p>
+                        <ul class="checkout-v2-summary__list">
+                            <li>Official KNS online course enrollment</li>
+                            <li>Payment runs on Monime (Orange Money / Afrimoney).</li>
+                            <li>Questions? <a href="mailto:admission@kns.edu.sl">admission@kns.edu.sl</a></li>
+                            <li>WhatsApp +232 79 422 442</li>
+                        </ul>
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="footer-title">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="online-courses.html">Online Courses</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Contact</h4>
+                    <ul class="footer-links">
+                        <li>Phone / WhatsApp: +232 79 422 442</li>
+                        <li>Email: admission@kns.edu.sl</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="copyright">&copy; 2026 KNS College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <div class="side-buttons-container">
+        <a href="http://webportal.kns.edu.sl/register" target="_blank" rel="noopener" class="side-btn side-btn-apply" title="Apply Now">
+            <span class="side-btn-text">Apply here</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="admissions.html#requirements" class="side-btn side-btn-requirements" title="View Requirements">
+            <span class="side-btn-text">Requirements</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+        </a>
+        <a href="online-courses.html" class="side-btn side-btn-online" title="Online Courses">
+            <span class="side-btn-text">Online Courses</span>
+            <svg class="side-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+        </a>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+    <script src="checkout.js"></script>
+</body>
+</html>

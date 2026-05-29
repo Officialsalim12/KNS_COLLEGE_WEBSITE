@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Payment cancelled — KNS College</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="page-checkout page-checkout--v2 page-checkout-result page-checkout-result--cancelled page-payment-result">
+
+    <header class="top-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <a href="index.html" class="logo">
+                        <img src="images/kns-college-logo.png" alt="KNS College Logo" class="logo-image">
+                        <div class="logo-text-container">
+                            <span class="logo-text">Knowledge</span>
+                            <span class="logo-text">Network</span>
+                            <span class="logo-text">Solutions</span>
+                        </div>
+                    </a>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-menu">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="online-courses.html">Online Courses</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </nav>
+                <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content-full checkout-v2-main">
+        <section class="checkout-v2-hero checkout-result-hero">
+            <div class="container">
+                <div class="checkout-result-badge checkout-result-badge--muted" aria-hidden="true">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                </div>
+                <h1 class="checkout-v2-hero__title">Payment cancelled</h1>
+                <p class="checkout-v2-hero__subtitle">You left checkout before paying. No money has been taken from your account.</p>
+            </div>
+        </section>
+
+        <section class="content-section checkout-v2-section">
+            <div class="container">
+                <div class="checkout-result-card checkout-result-card--cancelled" aria-busy="true">
+                    <p id="payment-result-loading" class="checkout-result-loading">Loading…</p>
+                    <p id="payment-result-course-line" class="checkout-result-course" hidden></p>
+                    <p class="checkout-result-lead">You can try again whenever you are ready. If you had trouble with Orange Money or Afrimoney, contact admissions and we will help.</p>
+                    <div class="checkout-result-actions">
+                        <a id="payment-cancelled-retry" class="checkout-v2-submit checkout-result-actions__primary" href="checkout.html">Try payment again</a>
+                        <a class="btn btn-secondary checkout-result-actions__secondary" href="contact.html">Contact support</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="footer-title">Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="online-courses.html">Online Courses</a></li>
+                        <li><a href="admissions.html">Admissions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Contact</h4>
+                    <ul class="footer-links">
+                        <li>Phone / WhatsApp: +232 79 422 442</li>
+                        <li>Email: admission@kns.edu.sl</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="copyright">&copy; 2026 KNS College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="payment-result.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
