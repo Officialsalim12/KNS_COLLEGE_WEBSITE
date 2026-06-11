@@ -415,8 +415,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
-        const formattedText = text.replace(/\n/g, '<br>');
-        messageContent.innerHTML = formattedText;
+        messageContent.textContent = text;
+        messageContent.style.whiteSpace = 'pre-wrap';
         
         messageDiv.appendChild(messageContent);
         chatMessages.appendChild(messageDiv);

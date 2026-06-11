@@ -112,21 +112,41 @@
         if (state.source !== 'application' || !state.reference) return;
         if (typeof CONFIG === 'undefined' || !CONFIG.API_BASE_URL) return;
 
+        const tokenKey = 'kns_payment_token_' + state.reference;
+        let statusUpdateToken = '';
+        try {
+            statusUpdateToken = sessionStorage.getItem(tokenKey) || '';
+        } catch (e) {
+            return;
+        }
+        if (!statusUpdateToken) return;
+
         const apiUrl = String(CONFIG.API_BASE_URL).replace(/\/+$/, '');
         const newStatus = isSuccess ? 'success' : 'failed';
+        const path =
+            CONFIG.ENDPOINTS && CONFIG.ENDPOINTS.PAYMENTS_RETURN_STATUS
+                ? CONFIG.ENDPOINTS.PAYMENTS_RETURN_STATUS
+                : '/api/payments/return-status';
+        const endpoint =
+            typeof CONFIG.buildApiUrl === 'function'
+                ? CONFIG.buildApiUrl(path)
+                : apiUrl + path;
 
-        fetch(apiUrl + '/api/payments?reference=' + encodeURIComponent(state.reference))
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-                if (!data || !data.payments || !data.payments.length) return;
-                return fetch(apiUrl + '/api/payments/' + data.payments[0].id, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        paymentStatus: newStatus,
-                        paymentReference: state.reference
-                    })
-                });
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                paymentReference: state.reference,
+                paymentStatus: newStatus,
+                statusUpdateToken: statusUpdateToken
+            })
+        })
+            .then(() => {
+                try {
+                    sessionStorage.removeItem(tokenKey);
+                } catch (e) {
+                    /* ignore */
+                }
             })
             .catch(() => {});
     }

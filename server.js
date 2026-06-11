@@ -15,8 +15,20 @@ if (fs.existsSync(path.join(__dirname, '.env.local'))) {
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const sgMail = require('@sendgrid/mail');
 const multer = require('multer');
+const {
+    APPLICATION_FEE_SLE,
+    escapeHtml,
+    escapeHtmlWithBreaks,
+    createPaymentStatusToken,
+    verifyPaymentStatusToken,
+    createRequireAdminApiKey,
+    isAllowedScholarshipFileUrl,
+    resolveScholarshipFilePath
+} = require('./security-helpers');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +40,11 @@ if (IS_IISNODE) {
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const KNS_ADMIN_API_KEY = (process.env.KNS_ADMIN_API_KEY || '').trim();
+const requireAdminApiKey = createRequireAdminApiKey(KNS_ADMIN_API_KEY);
 
 const MONIME_ACCESS_TOKEN = (process.env.MONIME_ACCESS_TOKEN || '').trim();
 const MONIME_SPACE_ID = (process.env.MONIME_SPACE_ID || '').trim();
@@ -97,6 +114,8 @@ if (MONIME_ACCESS_TOKEN) {
 console.log('Environment check:');
 console.log(`  SUPABASE_URL: ${supabaseUrl ? 'set' : 'missing'}`);
 console.log(`  SUPABASE_ANON_KEY: ${supabaseAnonKey ? 'set' : 'missing'}`);
+console.log(`  SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? 'set' : 'missing (using anon key)'}`);
+console.log(`  KNS_ADMIN_API_KEY: ${KNS_ADMIN_API_KEY ? 'set' : 'missing'}`);
 console.log(`  MONIME_ACCESS_TOKEN: ${MONIME_ACCESS_TOKEN ? 'set' : 'missing'}`);
 console.log(`  MONIME_SPACE_ID: ${MONIME_SPACE_ID ? 'set' : 'missing'}`);
 if (MONIME_ACCESS_TOKEN) {
@@ -112,7 +131,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseServiceKey && IS_PRODUCTION) {
+    console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Using anon key on the server.');
+}
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const sendgridApiKey = process.env.SENDGRID_API_KEY 
     ? process.env.SENDGRID_API_KEY.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim() 
@@ -155,62 +177,93 @@ if (!sendgridApiKey) {
 
 const DEBUG_CORS = process.env.DEBUG_CORS === 'true';
 
+function buildAllowedCorsOrigins() {
+    const origins = new Set(KNS_SITE_ORIGINS);
+    origins.add('https://kns-college-website.onrender.com');
+    if (!IS_PRODUCTION) {
+        [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:5500',
+            'http://127.0.0.1:5500',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173'
+        ].forEach((o) => origins.add(o));
+    }
+    const extra = (process.env.CORS_ORIGIN || '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+    extra.forEach((o) => {
+        try {
+            origins.add(new URL(o).origin);
+        } catch {
+            origins.add(o);
+        }
+    });
+    return origins;
+}
+
+const allowedCorsOrigins = buildAllowedCorsOrigins();
+
+function isOriginAllowed(origin) {
+    if (!origin) return true;
+    if (allowedCorsOrigins.has(origin)) return true;
+    try {
+        const host = new URL(origin).hostname.toLowerCase();
+        if (host === 'kns.edu.sl' || host.endsWith('.kns.edu.sl')) return true;
+    } catch {
+        /* ignore */
+    }
+    return false;
+}
+
 const corsOptions = {
     origin: function (origin, callback) {
         if (!origin) {
-            if (DEBUG_CORS) console.log('CORS: no origin');
+            if (DEBUG_CORS) console.log('CORS: no origin (allowed)');
             return callback(null, true);
         }
-
-        if (KNS_SITE_ORIGINS.includes(origin) || origin.includes('kns.edu.sl')) {
-            if (DEBUG_CORS) console.log(`CORS: ${origin}`);
+        if (isOriginAllowed(origin)) {
+            if (DEBUG_CORS) console.log(`CORS: allowed ${origin}`);
             return callback(null, true);
         }
-
-        const allowedOrigins = process.env.CORS_ORIGIN
-            ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-            : ['*'];
-
-        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-            if (DEBUG_CORS) console.log(`CORS: ${origin}`);
-            callback(null, true);
-        } else {
-            console.log(`CORS: allowing ${origin}`);
-            callback(null, true);
-        }
+        if (DEBUG_CORS) console.log(`CORS: blocked ${origin}`);
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-Admin-Api-Key']
 };
+
+app.use(
+    helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false
+    })
+);
 app.use(cors(corsOptions));
+app.use(express.json({ limit: '256kb' }));
+app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-
-    if (origin && (KNS_SITE_ORIGINS.includes(origin) || origin.includes('kns.edu.sl'))) {
-        res.header('Access-Control-Allow-Origin', origin);
-        if (DEBUG_CORS) console.log(`CORS header: ${origin}`);
-    } else if (origin) {
-        res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        res.header('Access-Control-Allow-Origin', '*');
-    }
-    
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400');
-
-    if (req.method === 'OPTIONS') {
-        if (DEBUG_CORS) console.log(`CORS preflight: ${origin || 'none'}`);
-        return res.sendStatus(200);
-    }
-    next();
+const apiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: IS_PRODUCTION ? 200 : 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many requests. Please try again later.' }
 });
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+const formRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: IS_PRODUCTION ? 15 : 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many form submissions. Please try again later.' }
+});
+
+app.use('/api/', apiRateLimiter);
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -308,7 +361,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-app.post('/api/test-email', async (req, res) => {
+app.post('/api/test-email', requireAdminApiKey, async (req, res) => {
     const { to } = req.body;
     const testRecipient = to || process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'knscollegesle@gmail.com';
     
@@ -380,7 +433,7 @@ You can safely delete this test email.
     }
 });
 
-app.get('/api/test', (req, res) => {
+app.get('/api/test', requireAdminApiKey, (req, res) => {
     res.json({ 
         status: 'ok', 
         message: 'API test endpoint is working',
@@ -700,7 +753,7 @@ async function lookupOnlineCourseAmountSleMinor(courseNameTrimmed) {
     return null;
 }
 
-app.post('/api/monime/checkout-session', async (req, res) => {
+app.post('/api/monime/checkout-session', formRateLimiter, async (req, res) => {
     try {
         if (!MONIME_ACCESS_TOKEN || !MONIME_SPACE_ID) {
             return res.status(503).json({
@@ -756,12 +809,21 @@ app.post('/api/monime/checkout-session', async (req, res) => {
 
         const courseNm = String(courseName).trim();
         const catalogAmount = await lookupOnlineCourseAmountSleMinor(courseNm);
-        const amount = catalogAmount != null ? catalogAmount : clientAmount;
+        if (catalogAmount == null) {
+            return res.status(400).json({
+                success: false,
+                error: 'Unknown course. Enroll from the online courses catalog so pricing is validated server-side.'
+            });
+        }
+        const amount = catalogAmount;
         if (!Number.isInteger(amount) || amount < 1 || amount > 100000000) {
             return res.status(400).json({
                 success: false,
                 error: 'Invalid charge amount for this course. Check amount_sle_minor in Supabase (online_courses).'
             });
+        }
+        if (amount !== clientAmount) {
+            console.warn(`Checkout amount adjusted for ${courseNm}: client ${clientAmount} → catalog ${amount}`);
         }
 
         const idem =
@@ -901,7 +963,7 @@ app.get('/api/monime/checkout-return-context', (req, res) => {
     });
 });
 
-app.get('/api/scholarships/diagnostics', async (req, res) => {
+app.get('/api/scholarships/diagnostics', requireAdminApiKey, async (req, res) => {
     try {
         const diagnostics = {
             timestamp: new Date().toISOString(),
@@ -988,12 +1050,12 @@ app.get('/api/scholarships/diagnostics', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             error: error.message,
-            stack: error.stack
+            stack: IS_PRODUCTION ? undefined : error.stack
         });
     }
 });
 
-app.get('/api/scholarships/test', async (req, res) => {
+app.get('/api/scholarships/test', requireAdminApiKey, async (req, res) => {
     try {
         console.log('Testing scholarships connection...');
         
@@ -1036,12 +1098,12 @@ app.get('/api/scholarships/test', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             error: error.message,
-            stack: error.stack
+            stack: IS_PRODUCTION ? undefined : error.stack
         });
     }
 });
 
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages', formRateLimiter, async (req, res) => {
     const { sessionId, sender, message } = req.body;
     
     if (!sessionId || !sender || !message) {
@@ -1050,9 +1112,9 @@ app.post('/api/messages', async (req, res) => {
         });
     }
     
-    if (sender !== 'user' && sender !== 'bot') {
+    if (sender !== 'user') {
         return res.status(400).json({ 
-            error: 'Invalid sender. Must be "user" or "bot"' 
+            error: 'Invalid sender. Must be "user"' 
         });
     }
     
@@ -1085,7 +1147,7 @@ app.post('/api/messages', async (req, res) => {
     });
 });
 
-app.get('/api/messages/:sessionId', async (req, res) => {
+app.get('/api/messages/:sessionId', requireAdminApiKey, async (req, res) => {
     const { sessionId } = req.params;
     
     const { data, error } = await supabase
@@ -1102,7 +1164,7 @@ app.get('/api/messages/:sessionId', async (req, res) => {
     res.json({ success: true, messages: data || [] });
 });
 
-app.post('/api/contacts', async (req, res) => {
+app.post('/api/contacts', formRateLimiter, async (req, res) => {
     const { name, email, phone, subject, message } = req.body;
     
     if (!name || !email || !subject || !message) {
@@ -1169,18 +1231,15 @@ Submitted At: ${new Date().toISOString()}
 
         const htmlBody = `
             <h2>New contact form submission from KNS College website</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
-            <p><strong>Subject:</strong> ${subject}</p>
-            <p><strong>Message:</strong><br>${message
-                .split('\n')
-                .map((line) => line.trim())
-                .join('<br>')}</p>
+            <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(phone || 'N/A')}</p>
+            <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+            <p><strong>Message:</strong><br>${escapeHtmlWithBreaks(message)}</p>
             <hr>
-            <p><strong>IP Address:</strong> ${ipAddress}</p>
-            <p><strong>User Agent:</strong> ${userAgent}</p>
-            <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
+            <p><strong>IP Address:</strong> ${escapeHtml(ipAddress)}</p>
+            <p><strong>User Agent:</strong> ${escapeHtml(userAgent)}</p>
+            <p><strong>Submitted At:</strong> ${escapeHtml(new Date().toISOString())}</p>
         `;
 
         const contactRecipientEmail = process.env.SENDGRID_CONTACT_EMAIL || 'admissions@kns.edu.sl';
@@ -1233,7 +1292,7 @@ Submitted At: ${new Date().toISOString()}
     });
 });
 
-app.get('/api/contacts', async (req, res) => {
+app.get('/api/contacts', requireAdminApiKey, async (req, res) => {
     const { data, error } = await supabase
         .from('contacts')
         .select('*')
@@ -1247,7 +1306,7 @@ app.get('/api/contacts', async (req, res) => {
     res.json({ success: true, contacts: data || [] });
 });
 
-app.post('/api/enquiries', async (req, res) => {
+app.post('/api/enquiries', formRateLimiter, async (req, res) => {
     const { name, email, phone, programme_interest, preferred_intake, message, newsletter } = req.body;
     
     if (!name || !email || !programme_interest) {
@@ -1311,20 +1370,17 @@ Submitted At: ${new Date().toISOString()}
 
         const htmlBody = `
             <h2>New programme enquiry from KNS College website</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
-            <p><strong>Programme of Interest:</strong> ${programme_interest}</p>
-            <p><strong>Preferred Intake:</strong> ${preferred_intake || 'Not specified'}</p>
-            <p><strong>Message:</strong><br>${(message || 'No additional message provided')
-                .split('\n')
-                .map((line) => line.trim())
-                .join('<br>')}</p>
+            <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(phone || 'N/A')}</p>
+            <p><strong>Programme of Interest:</strong> ${escapeHtml(programme_interest)}</p>
+            <p><strong>Preferred Intake:</strong> ${escapeHtml(preferred_intake || 'Not specified')}</p>
+            <p><strong>Message:</strong><br>${escapeHtmlWithBreaks(message || 'No additional message provided')}</p>
             <p><strong>Newsletter Opt-in:</strong> ${newsletterValue ? 'Yes' : 'No'}</p>
             <hr>
-            <p><strong>IP Address:</strong> ${ipAddress}</p>
-            <p><strong>User Agent:</strong> ${userAgent}</p>
-            <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
+            <p><strong>IP Address:</strong> ${escapeHtml(ipAddress)}</p>
+            <p><strong>User Agent:</strong> ${escapeHtml(userAgent)}</p>
+            <p><strong>Submitted At:</strong> ${escapeHtml(new Date().toISOString())}</p>
         `;
 
         const enquiryRecipientEmail = process.env.SENDGRID_ENQUIRY_EMAIL || 'enquiry@kns.edu.sl';
@@ -1377,7 +1433,7 @@ Submitted At: ${new Date().toISOString()}
     });
 });
 
-app.get('/api/enquiries', async (req, res) => {
+app.get('/api/enquiries', requireAdminApiKey, async (req, res) => {
     const { data, error } = await supabase
         .from('enquiries')
         .select('*')
@@ -1391,7 +1447,7 @@ app.get('/api/enquiries', async (req, res) => {
     res.json({ success: true, enquiries: data || [] });
 });
 
-app.post('/api/enrollments', async (req, res) => {
+app.post('/api/enrollments', formRateLimiter, async (req, res) => {
     const { 
         courseName, 
         firstName, 
@@ -1443,7 +1499,7 @@ app.post('/api/enrollments', async (req, res) => {
     });
 });
 
-app.get('/api/enrollments', async (req, res) => {
+app.get('/api/enrollments', requireAdminApiKey, async (req, res) => {
     const { data, error } = await supabase
         .from('enrollments')
         .select('*')
@@ -1457,7 +1513,7 @@ app.get('/api/enrollments', async (req, res) => {
     res.json({ success: true, enrollments: data || [] });
 });
 
-app.post('/api/payments', async (req, res) => {
+app.post('/api/payments', formRateLimiter, async (req, res) => {
     const { 
         courseName, 
         fullName, 
@@ -1472,9 +1528,7 @@ app.post('/api/payments', async (req, res) => {
         emergencyPhone, 
         deliveryMode, 
         intakePeriod, 
-        applicationFee,
-        paymentReference,
-        paymentStatus
+        paymentReference
     } = req.body;
     
     if (!courseName || !fullName || !email || !phone || !address || !city || !deliveryMode || !intakePeriod) {
@@ -1503,8 +1557,8 @@ app.post('/api/payments', async (req, res) => {
                 emergency_phone: emergencyPhone || null,
                 delivery_mode: deliveryMode,
                 intake_period: intakePeriod,
-                application_fee: applicationFee || 250,
-                payment_status: paymentStatus || 'pending',
+                application_fee: APPLICATION_FEE_SLE,
+                payment_status: 'pending',
                 payment_reference: paymentReference || null,
                 payment_provider: 'monime',
                 ip_address: ipAddress,
@@ -1522,20 +1576,76 @@ app.post('/api/payments', async (req, res) => {
     if (paymentReference) {
         saveCheckoutReturn(paymentReference, {
             course: courseName,
-            cost: applicationFee != null ? String(applicationFee) : '250',
+            cost: String(APPLICATION_FEE_SLE),
             source: 'application',
             reference: paymentReference
         });
     }
     
+    const statusUpdateToken = createPaymentStatusToken(data.id, data.payment_reference || paymentReference || '');
+
     res.json({ 
         success: true, 
         paymentId: data.id,
+        paymentReference: data.payment_reference,
+        statusUpdateToken,
         message: 'Payment submission saved successfully' 
     });
 });
 
-app.patch('/api/payments/:paymentId', async (req, res) => {
+app.post('/api/payments/return-status', formRateLimiter, async (req, res) => {
+    const { paymentReference, paymentStatus, statusUpdateToken } = req.body || {};
+
+    if (!paymentReference || !paymentStatus || !statusUpdateToken) {
+        return res.status(400).json({
+            error: 'paymentReference, paymentStatus, and statusUpdateToken are required'
+        });
+    }
+
+    const allowedStatuses = new Set(['success', 'failed', 'cancelled']);
+    if (!allowedStatuses.has(String(paymentStatus))) {
+        return res.status(400).json({ error: 'Invalid paymentStatus' });
+    }
+
+    const { data: existing, error: lookupError } = await supabase
+        .from('payments')
+        .select('id, payment_reference, payment_status')
+        .eq('payment_reference', String(paymentReference).trim())
+        .maybeSingle();
+
+    if (lookupError) {
+        console.error('Error looking up payment:', lookupError);
+        return res.status(500).json({ error: 'Failed to look up payment' });
+    }
+
+    if (!existing) {
+        return res.status(404).json({ error: 'Payment record not found' });
+    }
+
+    if (!verifyPaymentStatusToken(existing.id, existing.payment_reference, statusUpdateToken)) {
+        return res.status(403).json({ error: 'Invalid status update token' });
+    }
+
+    const { data, error } = await supabase
+        .from('payments')
+        .update({ payment_status: paymentStatus })
+        .eq('id', existing.id)
+        .select('id, payment_status, payment_reference')
+        .single();
+
+    if (error) {
+        console.error('Error updating payment:', error);
+        return res.status(500).json({ error: 'Failed to update payment status' });
+    }
+
+    res.json({
+        success: true,
+        payment: data,
+        message: 'Payment status updated successfully'
+    });
+});
+
+app.patch('/api/payments/:paymentId', requireAdminApiKey, async (req, res) => {
     const { paymentId } = req.params;
     const { paymentStatus, paymentReference } = req.body;
     
@@ -1576,7 +1686,7 @@ app.patch('/api/payments/:paymentId', async (req, res) => {
     });
 });
 
-app.get('/api/payments', async (req, res) => {
+app.get('/api/payments', requireAdminApiKey, async (req, res) => {
     const { status, course, reference } = req.query;
     
     let query = supabase
@@ -1726,10 +1836,12 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
         
         // external file URL — proxy so the browser doesn't hit CORS
         if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
+            if (!isAllowedScholarshipFileUrl(trimmedPath)) {
+                return res.status(400).json({ error: 'External file URL is not allowed' });
+            }
             try {
                 const https = require('https');
                 const http = require('http');
-                const url = require('url');
                 
                 const fileUrl = new URL(trimmedPath);
                 const protocol = fileUrl.protocol === 'https:' ? https : http;
@@ -1766,16 +1878,15 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
         const path = require('path');
         const fs = require('fs');
         
-        // normalize path under scholarships/
-        let cleanPath = trimmedPath.replace(/^\/+/, '').replace(/^scholarships\//, '');
-        const fullPath = path.join(__dirname, 'scholarships', cleanPath);
+        const fullPath = resolveScholarshipFilePath(__dirname, trimmedPath);
+        if (!fullPath) {
+            return res.status(400).json({ error: 'Invalid file path' });
+        }
         
         if (!fs.existsSync(fullPath)) {
             return res.status(404).json({ 
                 error: 'File not found',
-                path: fullPath,
-                message: 'The requested file does not exist on the server.',
-                suggestion: 'Please ensure the file exists in the scholarships directory or update the file path in the database.'
+                message: 'The requested file does not exist on the server.'
             });
         }
         
@@ -1811,7 +1922,7 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
     }
 });
 
-app.get('/api/scholarships/:id/files/check', async (req, res) => {
+app.get('/api/scholarships/:id/files/check', requireAdminApiKey, async (req, res) => {
     const { id } = req.params;
     
     try {
@@ -1843,22 +1954,20 @@ app.get('/api/scholarships/:id/files/check', async (req, res) => {
         
         // guide file on disk
         if (data.guide_path && data.guide_path.trim() && !data.guide_path.startsWith('http')) {
-            const cleanPath = data.guide_path.replace(/^\/+/, '').replace(/^scholarships\//, '');
-            const fullPath = path.join(__dirname, 'scholarships', cleanPath);
-            results.guide_full_path = fullPath;
-            results.guide_exists = fs.existsSync(fullPath);
+            const fullPath = resolveScholarshipFilePath(__dirname, data.guide_path);
+            results.guide_full_path = IS_PRODUCTION ? undefined : fullPath;
+            results.guide_exists = fullPath ? fs.existsSync(fullPath) : false;
         } else if (data.guide_path && (data.guide_path.startsWith('http://') || data.guide_path.startsWith('https://'))) {
-            results.guide_exists = 'external_url';
+            results.guide_exists = isAllowedScholarshipFileUrl(data.guide_path) ? 'external_url' : 'blocked_url';
         }
         
         // form file on disk
         if (data.form_path && data.form_path.trim() && !data.form_path.startsWith('http')) {
-            const cleanPath = data.form_path.replace(/^\/+/, '').replace(/^scholarships\//, '');
-            const fullPath = path.join(__dirname, 'scholarships', cleanPath);
-            results.form_full_path = fullPath;
-            results.form_exists = fs.existsSync(fullPath);
+            const fullPath = resolveScholarshipFilePath(__dirname, data.form_path);
+            results.form_full_path = IS_PRODUCTION ? undefined : fullPath;
+            results.form_exists = fullPath ? fs.existsSync(fullPath) : false;
         } else if (data.form_path && (data.form_path.startsWith('http://') || data.form_path.startsWith('https://'))) {
-            results.form_exists = 'external_url';
+            results.form_exists = isAllowedScholarshipFileUrl(data.form_path) ? 'external_url' : 'blocked_url';
         }
         
         res.json({ success: true, ...results });
@@ -1868,7 +1977,7 @@ app.get('/api/scholarships/:id/files/check', async (req, res) => {
     }
 });
 
-app.post('/api/scholarship-applications', async (req, res) => {
+app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
     try {
         // scholarship application — parse body
         const {
@@ -2021,32 +2130,32 @@ Submitted At: ${new Date().toISOString()}
             const htmlBody = `
                 <h2>New scholarship application from KNS College website</h2>
                 <h3>Personal Information</h3>
-                <p><strong>Name:</strong> ${surname}, ${first_name} ${other_names || ''}</p>
-                <p><strong>Gender:</strong> ${gender}</p>
-                <p><strong>Date of Birth:</strong> ${date_of_birth}</p>
-                <p><strong>Nationality:</strong> ${nationality}</p>
-                <p><strong>National ID:</strong> ${national_id}</p>
+                <p><strong>Name:</strong> ${escapeHtml(surname)}, ${escapeHtml(first_name)} ${escapeHtml(other_names || '')}</p>
+                <p><strong>Gender:</strong> ${escapeHtml(gender)}</p>
+                <p><strong>Date of Birth:</strong> ${escapeHtml(date_of_birth)}</p>
+                <p><strong>Nationality:</strong> ${escapeHtml(nationality)}</p>
+                <p><strong>National ID:</strong> ${escapeHtml(national_id)}</p>
                 
                 <h3>Contact Information</h3>
-                <p><strong>Address:</strong> ${address}</p>
-                <p><strong>City:</strong> ${city}</p>
-                <p><strong>Phone:</strong> ${phone}</p>
-                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Address:</strong> ${escapeHtml(address)}</p>
+                <p><strong>City:</strong> ${escapeHtml(city)}</p>
+                <p><strong>Phone:</strong> ${escapeHtml(phone)}</p>
+                <p><strong>Email:</strong> ${escapeHtml(email)}</p>
                 
                 <h3>Academic Background</h3>
-                <p><strong>Highest Qualification:</strong> ${highest_qualification}</p>
-                <p><strong>School/Institution:</strong> ${school_institution}</p>
-                <p><strong>Year of Completion:</strong> ${year_of_completion}</p>
-                <p><strong>Credits:</strong> ${credits || 'N/A'}</p>
+                <p><strong>Highest Qualification:</strong> ${escapeHtml(highest_qualification)}</p>
+                <p><strong>School/Institution:</strong> ${escapeHtml(school_institution)}</p>
+                <p><strong>Year of Completion:</strong> ${escapeHtml(year_of_completion)}</p>
+                <p><strong>Credits:</strong> ${escapeHtml(credits || 'N/A')}</p>
                 
                 <h3>Programme & Scholarship</h3>
-                <p><strong>Programme:</strong> ${programme}</p>
-                <p><strong>Scholarship Type:</strong> ${scholarship_type}</p>
-                <p><strong>Previous Application:</strong> ${previous_application}</p>
-                ${previous_application === 'Yes' && previous_application_details ? `<p><strong>Previous Application Details:</strong> ${previous_application_details}</p>` : ''}
+                <p><strong>Programme:</strong> ${escapeHtml(programme)}</p>
+                <p><strong>Scholarship Type:</strong> ${escapeHtml(scholarship_type)}</p>
+                <p><strong>Previous Application:</strong> ${escapeHtml(previous_application)}</p>
+                ${previous_application === 'Yes' && previous_application_details ? `<p><strong>Previous Application Details:</strong> ${escapeHtml(previous_application_details)}</p>` : ''}
                 
                 <h3>Personal Statement</h3>
-                <p>${personal_statement.split('\n').map(line => line.trim()).join('<br>')}</p>
+                <p>${escapeHtmlWithBreaks(personal_statement)}</p>
                 
                 <h3>Supporting Documents</h3>
                 <p><strong>Note:</strong> Supporting documents must be submitted in person at the KNS College office.</p>
@@ -2062,9 +2171,9 @@ Submitted At: ${new Date().toISOString()}
                 <strong>Contact:</strong> +232 79 422 442 | admissions@kns.edu.sl</p>
                 
                 <hr>
-                <p><strong>IP Address:</strong> ${ipAddress}</p>
-                <p><strong>User Agent:</strong> ${userAgent}</p>
-                <p><strong>Submitted At:</strong> ${new Date().toISOString()}</p>
+                <p><strong>IP Address:</strong> ${escapeHtml(ipAddress)}</p>
+                <p><strong>User Agent:</strong> ${escapeHtml(userAgent)}</p>
+                <p><strong>Submitted At:</strong> ${escapeHtml(new Date().toISOString())}</p>
             `;
             
             const scholarshipRecipientEmail = process.env.SENDGRID_SCHOLARSHIP_EMAIL || 'knscollegesle@gmail.com';
@@ -2157,7 +2266,7 @@ Submitted At: ${new Date().toISOString()}
     }
 });
 
-app.get('/api/scholarship-applications', async (req, res) => {
+app.get('/api/scholarship-applications', requireAdminApiKey, async (req, res) => {
     const { scholarship_id, status } = req.query;
     
     let query = supabase
@@ -2184,7 +2293,7 @@ app.get('/api/scholarship-applications', async (req, res) => {
     res.json({ success: true, applications: data || [] });
 });
 
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', requireAdminApiKey, async (req, res) => {
     try {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -2230,39 +2339,16 @@ app.use('/api/*', (req, res) => {
     console.error(`  Origin: ${req.headers.origin || 'none'}`);
     res.status(404).json({ 
         error: 'API route not found',
-        hint: 'Restart local Node (npm start) or redeploy Render so server.js matches this repo. Request path must match exactly (e.g. GET /api/online-course-ratings).',
         path: req.path,
-        method: req.method,
-        originalUrl: req.originalUrl,
-        availableRoutes: [
-            'GET /api/health',
-            'GET /api/test',
-            'GET /api/scholarships',
-            'GET /api/scholarships/:id',
-            'GET /api/scholarships/:id/download/:type',
-            'GET /api/scholarships/test',
-            'GET /api/scholarships/diagnostics',
-            'POST /api/messages',
-            'GET /api/messages/:sessionId',
-            'POST /api/contacts',
-            'GET /api/contacts',
-            'POST /api/enquiries',
-            'GET /api/enquiries',
-            'POST /api/enrollments',
-            'GET /api/enrollments',
-            'POST /api/payments',
-            'PATCH /api/payments/:paymentId',
-            'GET /api/payments',
-            'POST /api/scholarship-applications',
-            'GET /api/scholarship-applications',
-            'GET /api/stats',
-            'GET /api/online-courses',
-            'GET /api/online-course-ratings',
-            'POST /api/online-course-ratings',
-            'POST /api/monime/checkout-session',
-            'GET /api/monime/checkout-return-context'
-        ]
+        method: req.method
     });
+});
+
+app.use((err, req, res, next) => {
+    if (err && err.message === 'Not allowed by CORS') {
+        return res.status(403).json({ error: 'Not allowed by CORS' });
+    }
+    next(err);
 });
 
 app.post(

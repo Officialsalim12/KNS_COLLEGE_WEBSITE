@@ -180,13 +180,19 @@ function getFileNameFromUrl(url, fileType) {
     return `${fileType.toLowerCase()}-${Date.now()}.pdf`;
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function showError(message) {
     const mainContent = document.querySelector('.content-main');
     if (mainContent) {
         mainContent.innerHTML = `
             <div class="error-message">
                 <h2 class="content-heading">Error</h2>
-                <p class="content-text">${message}</p>
+                <p class="content-text">${escapeHtml(message)}</p>
             </div>
         `;
     }

@@ -126,6 +126,7 @@ const CONFIG = {
         ENQUIRIES: '/api/enquiries',
         ENROLLMENTS: '/api/enrollments',
         PAYMENTS: '/api/payments',
+        PAYMENTS_RETURN_STATUS: '/api/payments/return-status',
         SCHOLARSHIPS: '/api/scholarships',
         SCHOLARSHIP_APPLICATIONS: '/api/scholarship-applications',
         STATS: '/api/stats',
