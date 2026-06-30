@@ -6,7 +6,40 @@
     <title>Payment Successful — KNS College</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="page-payment-result page-payment-result--success">
+<body class="page-checkout page-checkout--v2 page-payment-result page-payment-result--success">
+
+    <header class="top-header payment-result-backpage" aria-hidden="true">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <a href="index.html" class="logo" tabindex="-1">
+                        <img src="images/kns-college-logo.png" alt="" class="logo-image">
+                        <div class="logo-text-container">
+                            <span class="logo-text">Knowledge</span>
+                            <span class="logo-text">Network</span>
+                            <span class="logo-text">Solutions</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="checkout-v2-main payment-result-backpage" aria-hidden="true">
+        <section class="checkout-v2-hero">
+            <div class="container">
+                <h1 class="checkout-v2-hero__title">Checkout</h1>
+            </div>
+        </section>
+        <section class="content-section checkout-v2-section">
+            <div class="container">
+                <div class="checkout-v2-layout">
+                    <div class="checkout-v2-card checkout-v2-card--form payment-result-backpage__card"></div>
+                    <aside class="checkout-v2-card checkout-v2-card--summary payment-result-backpage__card"></aside>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <div class="payment-result-overlay" id="payment-result-overlay">
         <div class="payment-result-backdrop" aria-hidden="true"></div>
@@ -25,57 +58,46 @@
             <header class="payment-result-hero">
                 <div class="payment-result-hero__icon-wrap" aria-hidden="true">
                     <span class="payment-result-hero__icon payment-result-hero__icon--success">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                             <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
                 </div>
-                <h1 id="payment-result-dialog-title" class="payment-result-hero__title">Payment Successful!</h1>
-                <p class="payment-result-hero__lead">Thank you for purchasing this course.</p>
+                <h1 id="payment-result-dialog-title" class="payment-result-hero__title">You&apos;re all set!</h1>
+                <p class="payment-result-hero__lead">Your enrollment is confirmed.</p>
             </header>
 
             <div id="payment-result-dialog-desc" class="payment-result-modal__body">
                 <p id="payment-result-loading" class="payment-result-loading">Loading your enrollment details…</p>
 
-                <div class="payment-result-highlight payment-result-highlight--success" role="note">
-                    <span class="payment-result-highlight__graphic" aria-hidden="true">
-                        <svg class="payment-result-highlight__envelope" width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-                            <rect x="6" y="12" width="36" height="26" rx="4" fill="#22a06b"/>
-                            <path d="M6 16l18 12L42 16" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-                            <rect x="28" y="30" width="14" height="14" rx="7" fill="#166534"/>
-                            <circle cx="35" cy="37" r="4" stroke="#fff" stroke-width="1.5"/>
-                            <path d="M35 35v3l2 1.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
-                        </svg>
-                    </span>
-                    <p class="payment-result-highlight__text">
-                        We will send your learning portal login link and credentials to your registered email address within <strong>48 hours</strong>.
-                    </p>
-                </div>
-
                 <p id="payment-result-course-line" class="payment-result-course" hidden></p>
                 <p id="payment-result-reference-line" class="payment-result-reference" hidden></p>
 
+                <div class="payment-result-highlight payment-result-highlight--success" role="note">
+                    <p class="payment-result-highlight__text">
+                        We&apos;ll email your learning portal login link within <strong>48 hours</strong>. Check your inbox (and spam folder).
+                    </p>
+                </div>
+
                 <div id="payment-result-checkout-note" class="payment-result-section">
-                    <h2 class="payment-result-section__title">What&apos;s Next?</h2>
+                    <h2 class="payment-result-section__title">What&apos;s next</h2>
                     <ul class="payment-result-steps">
-                        <li>Check your email for the login link and credentials from KNS College.</li>
-                        <li>Use the link to access your learning portal and start your course.</li>
-                        <li>Happy Learning!</li>
+                        <li>Open the email from KNS College with your portal link.</li>
+                        <li>Sign in and start your course at your own pace.</li>
                     </ul>
                 </div>
 
                 <div id="payment-result-application-note" class="payment-result-section" hidden>
-                    <h2 class="payment-result-section__title">What&apos;s Next?</h2>
+                    <h2 class="payment-result-section__title">What&apos;s next</h2>
                     <ul class="payment-result-steps">
-                        <li>Your application fee payment has been recorded.</li>
-                        <li>Watch your email for your PIN and the portal link to finish your course application.</li>
-                        <li>Need help? Contact <a href="mailto:admission@kns.edu.sl">admission@kns.edu.sl</a> or <a href="https://wa.me/23279422442" target="_blank" rel="noopener noreferrer">WhatsApp +232 79 422 442</a>.</li>
+                        <li>Your application fee has been recorded.</li>
+                        <li>Watch your email for your PIN and portal link.</li>
                     </ul>
                 </div>
 
                 <div class="payment-result-actions">
-                    <a class="payment-result-btn payment-result-btn--success payment-result-btn--primary" href="index.html">Return to Home</a>
-                    <a class="payment-result-btn-link" href="online-courses.html">Online Courses</a>
+                    <a class="payment-result-btn payment-result-btn--success payment-result-btn--primary" href="online-courses.html">Browse more courses</a>
+                    <a class="payment-result-btn-link" href="index.html">Return to home</a>
                 </div>
             </div>
         </div>
@@ -83,6 +105,6 @@
 
     <script src="config.js"></script>
     <script src="payment-result.js"></script>
-    <script src="payment-result-a11y.js"></script>
+    <script src="payment-result-modal.js"></script>
 </body>
 </html>

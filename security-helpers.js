@@ -97,7 +97,6 @@ function isAllowedScholarshipFileUrl(urlStr) {
         if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
         const host = u.hostname.toLowerCase();
         if (isPrivateOrReservedIp(host)) return false;
-        if (host.endsWith('.supabase.co')) return true;
         if (SCHOLARSHIP_FILE_ALLOWED_HOSTS.has(host)) return true;
         if (host.endsWith('.kns.edu.sl')) return true;
         return false;

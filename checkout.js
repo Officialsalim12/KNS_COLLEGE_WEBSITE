@@ -37,8 +37,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (summaryPrice) {
         summaryPrice.textContent = priceLabel;
     }
+    function enrollButtonLabel(price) {
+        return price ? "Enroll for " + price : "Enroll now";
+    }
+
     if (payBtn) {
-        payBtn.textContent = "Continue to USSD payment — " + priceLabel;
+        payBtn.textContent = enrollButtonLabel(priceLabel);
     }
 
     if (!courseDecoded && courseDisplay) {
@@ -146,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (payBtn) {
                 payBtn.disabled = true;
-                payBtn.textContent = "Starting USSD payment…";
+                payBtn.textContent = "Processing…";
             }
 
             try {
@@ -182,7 +186,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } finally {
                 if (payBtn) {
                     payBtn.disabled = false;
-                    payBtn.textContent = "Continue to USSD payment — " + priceLabel;
+                    payBtn.textContent = enrollButtonLabel(priceLabel);
                 }
             }
         });

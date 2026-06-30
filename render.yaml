@@ -1,20 +1,29 @@
-# Node API for kns.edu.sl — the website files themselves go on Sector Link.
+# Node API + PostgreSQL on Render. Static site (kns.edu.sl) calls this API.
+
+databases:
+  - name: kns-college-db
+    plan: free
+    databaseName: kns_college
+    user: kns_college
 
 services:
   - type: web
     name: kns-college-backend
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm run db:migrate && npm run db:seed
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      # Secrets go in the Render dashboard:
-      # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-      # KNS_ADMIN_API_KEY (protects admin/read API routes)
-      # PAYMENT_STATUS_SECRET (optional; HMAC for payment return status)
-      # SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_TO_EMAIL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kns-college-db
+          property: connectionString
+      # Set in Render dashboard (Secrets):
+      # KNS_ADMIN_API_KEY
+      # PAYMENT_STATUS_SECRET
+      # SENDGRID_API_KEY, SENDGRID_SCHOLARSHIP_EMAIL, SENDGRID_CONTACT_EMAIL, SENDGRID_ENQUIRY_EMAIL
       # MONIME_ACCESS_TOKEN, MONIME_SPACE_ID
       # MONIME_REQUIRE_LIVE_TOKEN=true
       # MONIME_ALLOWED_CHECKOUT_ORIGINS=https://kns.edu.sl,https://www.kns.edu.sl

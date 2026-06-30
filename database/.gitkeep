@@ -1,3 +1,0 @@
-# This file ensures the database directory is tracked by git
-# The actual database file (kns_college.db) is ignored
-

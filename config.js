@@ -17,6 +17,7 @@ const KNS_DEFAULT_RENDER_API = 'https://kns-college-website.onrender.com';
 
 function isAllowedStoredApiBaseUrl(normalized) {
     if (!normalized) return false;
+    if (normalized.includes('kns.edu.sl')) return true;
     if (normalized.includes('kns-college-website.onrender.com')) return true;
     if (/^https?:\/\/localhost(?::\d+)?(\/|$)/i.test(normalized)) return true;
     if (/^https?:\/\/127\.0\.0\.1(?::\d+)?(\/|$)/i.test(normalized)) return true;
@@ -61,19 +62,18 @@ function getApiBaseUrl() {
         if (wantsLocalNodeApi()) {
             return 'http://localhost:3000';
         }
-        const bundledLocal =
-            /^http:\/\/(localhost|127\.0\.0\.1):3000$/i.test(currentOrigin);
-        if (bundledLocal) {
+        if (/^http:\/\/(localhost|127\.0\.0\.1):3000$/i.test(currentOrigin)) {
             return currentOrigin;
         }
-        return KNS_DEFAULT_RENDER_API;
+        // Live Server / other local ports — use local Node API (npm run dev), not Render
+        return 'http://localhost:3000';
     }
 
     if (currentOrigin.includes('onrender.com') || currentOrigin.includes('kns-college-website')) {
         return currentOrigin;
     }
 
-    // kns.edu.sl frontend → render API
+    // kns.edu.sl — static site; API on Render (PostgreSQL backend)
     if (currentOrigin.includes('kns.edu.sl')) {
         return KNS_DEFAULT_RENDER_API;
     }
@@ -118,7 +118,7 @@ if (typeof window !== 'undefined') {
 
 const CONFIG = {
     API_BASE_URL: calculatedApiBaseUrl,
-    PRODUCTION_API_URL: 'https://kns-college-website.onrender.com',
+    PRODUCTION_API_URL: 'https://kns.edu.sl',
     
     ENDPOINTS: {
         MESSAGES: '/api/messages',

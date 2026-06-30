@@ -9911,7 +9911,7 @@ code {
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
-    padding: 8px 12px 8px 10px;
+    padding: 10px 14px 10px 12px;
     border-radius: 8px 10px 10px 8px;
     background: linear-gradient(145deg, #ffffff 0%, #f4f7fb 100%);
     border: 1px solid rgba(255, 255, 255, 0.95);
@@ -9933,11 +9933,11 @@ code {
 }
 
 .page-online-courses .online-course-card__price-tag__value {
-    font-size: 0.72rem;
+    font-size: 1.2rem;
     font-weight: 800;
     letter-spacing: 0.01em;
     color: #0c2340;
-    line-height: 1.3;
+    line-height: 1.25;
     text-transform: none;
 }
 
@@ -11117,16 +11117,39 @@ code {
     --pr-cancel-dark: #c2410c;
     --pr-cancel-light: #fff7ed;
     --pr-cancel-peach: #ffedd5;
-    --pr-cancel-pink: #fee2e2;
-    --pr-cancel-icon-bg: #fecaca;
+    --pr-failed: #dc2626;
+    --pr-failed-dark: #991b1b;
+    --pr-failed-light: #fef2f2;
+    --pr-failed-rose: #fee2e2;
     overflow: hidden;
     min-height: 100dvh;
     background: var(--background-section);
 }
 
-.page-payment-result .top-header,
-.page-payment-result .footer,
-.page-payment-result .checkout-v2-main {
+.page-payment-result .payment-result-backpage {
+    pointer-events: none;
+    user-select: none;
+    filter: blur(2px);
+    opacity: 0.55;
+}
+
+.page-payment-result .payment-result-backpage__card {
+    min-height: 280px;
+}
+
+.page-payment-result .top-header.payment-result-backpage {
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.page-payment-result .checkout-v2-main.payment-result-backpage {
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.page-payment-result .footer {
     display: none;
 }
 
@@ -11252,6 +11275,11 @@ code {
     margin-bottom: 0.65rem;
 }
 
+.payment-result-hero__icon-wrap--failed {
+    min-height: 4.5rem;
+    margin-bottom: 0.65rem;
+}
+
 .payment-result-hero__icon {
     display: inline-flex;
     align-items: center;
@@ -11280,6 +11308,20 @@ code {
     box-shadow: 0 6px 20px rgba(34, 160, 107, 0.35);
 }
 
+.payment-result-hero__icon--cancelled {
+    background: var(--pr-cancel-light);
+    color: var(--pr-cancel);
+    border: 2px solid var(--pr-cancel-peach);
+    box-shadow: none;
+}
+
+.payment-result-hero__icon--failed {
+    background: var(--pr-failed-light);
+    color: var(--pr-failed);
+    border: 2px solid var(--pr-failed-rose);
+    box-shadow: none;
+}
+
 .payment-result-hero__calendar {
     display: block;
     margin-top: -0.35rem;
@@ -11296,6 +11338,10 @@ code {
 
 .payment-result-hero__title--cancelled {
     color: var(--pr-cancel-dark);
+}
+
+.payment-result-hero__title--failed {
+    color: var(--pr-failed-dark);
 }
 
 .payment-result-hero__lead {
@@ -11367,6 +11413,11 @@ code {
 .payment-result-highlight--cancelled {
     background: var(--pr-cancel-light);
     border: 1px solid var(--pr-cancel-peach);
+}
+
+.payment-result-highlight--failed {
+    background: var(--pr-failed-light);
+    border: 1px solid var(--pr-failed-rose);
 }
 
 .payment-result-highlight__graphic {
@@ -11496,6 +11547,10 @@ code {
     margin-top: 0.5rem;
 }
 
+.payment-result-actions--stack .payment-result-btn-link {
+    margin-top: 0.1rem;
+}
+
 .payment-result-btn {
     display: inline-flex;
     align-items: center;
@@ -11541,6 +11596,23 @@ code {
     border-color: var(--pr-cancel-dark);
     color: var(--pr-cancel-dark);
     transform: translateY(-1px);
+}
+
+.payment-result-btn--failed {
+    color: #ffffff;
+    background: var(--pr-failed);
+    border: 2px solid var(--pr-failed-dark);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+}
+
+.payment-result-btn--failed:hover {
+    background: var(--pr-failed-dark);
+    transform: translateY(-1px);
+}
+
+.payment-result-btn--failed:focus-visible {
+    outline: 2px solid var(--pr-failed);
+    outline-offset: 2px;
 }
 
 .payment-result-btn:focus-visible {

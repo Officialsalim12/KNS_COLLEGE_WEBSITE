@@ -1,4 +1,5 @@
-(function () {    'use strict';
+(function () {
+    'use strict';
 
     function safeDecode(v) {
         if (v == null || v === '') return '';
@@ -9,8 +10,37 @@
         }
     }
 
+    function getResultKind() {
+        if (document.body.classList.contains('page-payment-result--failed')) return 'failed';
+        if (document.body.classList.contains('page-payment-result--cancelled')) return 'cancelled';
+        return 'success';
+    }
+
+    function isFailedReturn(params) {
+        const status = (params.get('status') || params.get('payment_status') || '').toLowerCase();
+        return (
+            status === 'failed' ||
+            status === 'error' ||
+            status === 'declined' ||
+            params.get('failed') === '1' ||
+            params.get('failed') === 'true' ||
+            params.get('error') === '1' ||
+            params.get('error') === 'true'
+        );
+    }
+
     const params = new URLSearchParams(window.location.search);
-    const isSuccess = !document.body.classList.contains('page-payment-result--cancelled');
+
+    if (
+        document.body.classList.contains('page-payment-result--cancelled') &&
+        isFailedReturn(params)
+    ) {
+        window.location.replace('payment-failed.html?' + params.toString());
+        return;
+    }
+
+    const resultKind = getResultKind();
+    const isSuccess = resultKind === 'success';
 
     let state = {
         course: safeDecode(params.get('course')),
@@ -27,6 +57,24 @@
         return '';
     }
 
+    function buildRetryHref() {
+        const fee = feeLabel();
+        if (state.course) {
+            if (state.source === 'application') {
+                let href = 'payment.html?course=' + encodeURIComponent(state.course);
+                if (state.cost) href += '&cost=' + encodeURIComponent(state.cost);
+                return href;
+            }
+            let href = 'checkout.html?course=' + encodeURIComponent(state.course);
+            if (fee) href += '&price=' + encodeURIComponent(fee);
+            if (state.amountMinor && /^\d+$/.test(String(state.amountMinor))) {
+                href += '&amount_minor=' + encodeURIComponent(String(state.amountMinor));
+            }
+            return href;
+        }
+        return state.source === 'application' ? 'payment.html' : 'online-courses.html';
+    }
+
     function applyUi() {
         const fee = feeLabel();
         const isApplication = state.source === 'application';
@@ -38,11 +86,11 @@
                 if (fee) bits.push(fee);
                 line.textContent = bits.join(' · ');
                 line.hidden = false;
-            } else {
-                line.textContent = isSuccess
-                    ? 'Your payment was received.'
-                    : 'Payment was not completed.';
+            } else if (isSuccess) {
+                line.textContent = 'Your payment was received.';
                 line.hidden = false;
+            } else {
+                line.hidden = true;
             }
         }
 
@@ -62,43 +110,24 @@
         const checkoutNote = document.getElementById('payment-result-checkout-note');
         if (checkoutNote) checkoutNote.hidden = isApplication || !isSuccess;
 
-        const heroLead = document.querySelector('.payment-result-hero__lead');
-        if (heroLead && !isApplication) {
-            if (isSuccess) {
-                heroLead.textContent = 'Thank you — your USSD payment was received.';
-            } else {
-                heroLead.textContent = 'Your USSD payment was cancelled and no charges were made.';
-            }
-        }
-
-        const retry = document.getElementById('payment-cancelled-retry');
+        const retry =
+            document.getElementById('payment-cancelled-retry') ||
+            document.getElementById('payment-failed-retry');
         if (retry) {
-            if (state.course) {
-                let href;
-                if (isApplication) {
-                    href = 'payment.html?course=' + encodeURIComponent(state.course);
-                    if (state.cost) href += '&cost=' + encodeURIComponent(state.cost);
-                } else {
-                    href = 'checkout.html?course=' + encodeURIComponent(state.course);
-                    if (fee) href += '&price=' + encodeURIComponent(fee);
-                    if (state.amountMinor && /^\d+$/.test(String(state.amountMinor))) {
-                        href += '&amount_minor=' + encodeURIComponent(String(state.amountMinor));
-                    }
-                }
-                retry.setAttribute('href', href);
-                if (!isApplication) retry.textContent = 'Try USSD payment again';
-            } else {
-                retry.setAttribute('href', isApplication ? 'payment.html' : 'online-courses.html');
-                if (!isApplication) retry.textContent = 'Return to online courses';
+            retry.setAttribute('href', buildRetryHref());
+            if (!state.course) {
+                retry.textContent =
+                    state.source === 'application' ? 'Return to application' : 'Browse courses';
             }
         }
 
         if (state.course) {
-            document.title =
-                (isSuccess ? 'Payment Successful' : 'Payment Cancelled') +
-                ' — ' +
-                state.course +
-                ' | KNS College';
+            const titles = {
+                success: 'Payment Successful',
+                cancelled: 'Payment Cancelled',
+                failed: 'Payment Failed'
+            };
+            document.title = titles[resultKind] + ' — ' + state.course + ' | KNS College';
         }
 
         const loading = document.getElementById('payment-result-loading');

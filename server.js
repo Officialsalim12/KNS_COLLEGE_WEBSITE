@@ -1,19 +1,46 @@
-// main API server — express, supabase, sendgrid, monime checkout
+// main API server — express, postgresql, sendgrid, monime checkout
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-if (fs.existsSync(path.join(__dirname, '.env.local'))) {
-    require('dotenv').config({ path: '.env.local' });
-} else if (fs.existsSync(path.join(__dirname, '.env'))) {
-    require('dotenv').config({ path: '.env' });
-} else {
+(function loadEnvFiles() {
+    const root = __dirname;
+    const localEnv = path.join(root, '.env.local');
+    const defaultEnv = path.join(root, '.env');
+    const productionEnv = path.join(root, '.env.production');
+
+    if (fs.existsSync(localEnv)) {
+        require('dotenv').config({ path: localEnv });
+        console.log('Loaded environment from .env.local');
+        return;
+    }
+    if (fs.existsSync(defaultEnv)) {
+        require('dotenv').config({ path: defaultEnv });
+        console.log('Loaded environment from .env');
+        return;
+    }
+    if (fs.existsSync(productionEnv)) {
+        require('dotenv').config({ path: productionEnv });
+        console.log('Loaded environment from .env.production');
+        return;
+    }
+    const knsEnv = path.join(root, 'kns.env');
+    if (fs.existsSync(knsEnv)) {
+        require('dotenv').config({ path: knsEnv });
+        console.log('Loaded environment from kns.env');
+        return;
+    }
+
     require('dotenv').config();
-}
+    console.warn(
+        'No env file found. Create .env.local with DATABASE_URL (PostgreSQL connection string).'
+    );
+})();
 
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
+const { isDbConfigured, initDatabase, isMissingRelation } = require('./database/pg');
+const db = require('./database/queries');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -34,14 +61,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_IISNODE = Boolean(process.env.IISNODE_VERSION);
 
+app.set('etag', false);
+
 if (IS_IISNODE) {
     app.set('trust proxy', 1);
 }
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-const supabaseKey = supabaseServiceKey || supabaseAnonKey;
+const DATABASE_URL = (process.env.DATABASE_URL || '').trim();
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const KNS_ADMIN_API_KEY = (process.env.KNS_ADMIN_API_KEY || '').trim();
 const requireAdminApiKey = createRequireAdminApiKey(KNS_ADMIN_API_KEY);
@@ -77,7 +103,10 @@ function buildMonimeCheckoutAllowedOrigins() {
     const isProduction = process.env.NODE_ENV === 'production';
     const defaults = isProduction ? productionDefaults : productionDefaults.concat(devExtras);
     const raw = process.env.MONIME_ALLOWED_CHECKOUT_ORIGINS;
-    const list = raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : defaults;
+    let list = raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : defaults;
+    if (!isProduction && raw) {
+        list = list.concat(devExtras);
+    }
     const set = new Set();
     list.forEach((item) => {
         try {
@@ -112,9 +141,7 @@ if (MONIME_ACCESS_TOKEN) {
 }
 
 console.log('Environment check:');
-console.log(`  SUPABASE_URL: ${supabaseUrl ? 'set' : 'missing'}`);
-console.log(`  SUPABASE_ANON_KEY: ${supabaseAnonKey ? 'set' : 'missing'}`);
-console.log(`  SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? 'set' : 'missing (using anon key)'}`);
+console.log(`  DATABASE_URL: ${DATABASE_URL ? 'set' : 'missing'}`);
 console.log(`  KNS_ADMIN_API_KEY: ${KNS_ADMIN_API_KEY ? 'set' : 'missing'}`);
 console.log(`  MONIME_ACCESS_TOKEN: ${MONIME_ACCESS_TOKEN ? 'set' : 'missing'}`);
 console.log(`  MONIME_SPACE_ID: ${MONIME_SPACE_ID ? 'set' : 'missing'}`);
@@ -124,17 +151,14 @@ if (MONIME_ACCESS_TOKEN) {
 console.log(`  PORT: ${PORT}`);
 console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment variables');
-    console.error('For production deployment, set these in your hosting platform environment variables');
-    console.error('For local development, create a .env.local file with your Supabase credentials');
-    process.exit(1);
+if (!isDbConfigured()) {
+    console.error('Error: DATABASE_URL must be set (PostgreSQL connection string from Render or your host)');
+    console.error('For production: set DATABASE_URL in Render env vars or .env.production on the server');
+    console.error('For local dev: add DATABASE_URL to .env.local, then run npm run db:migrate');
+    if (!IS_IISNODE) {
+        process.exit(1);
+    }
 }
-
-if (!supabaseServiceKey && IS_PRODUCTION) {
-    console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Using anon key on the server.');
-}
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const sendgridApiKey = process.env.SENDGRID_API_KEY 
     ? process.env.SENDGRID_API_KEY.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim() 
@@ -207,11 +231,14 @@ function buildAllowedCorsOrigins() {
 const allowedCorsOrigins = buildAllowedCorsOrigins();
 
 function isOriginAllowed(origin) {
-    if (!origin) return true;
+    if (!origin || origin === 'null') return true;
     if (allowedCorsOrigins.has(origin)) return true;
     try {
         const host = new URL(origin).hostname.toLowerCase();
         if (host === 'kns.edu.sl' || host.endsWith('.kns.edu.sl')) return true;
+        if (!IS_PRODUCTION && (host === 'localhost' || host === '127.0.0.1' || host === '[::1]')) {
+            return true;
+        }
     } catch {
         /* ignore */
     }
@@ -247,6 +274,16 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
+app.use((req, res, next) => {
+    if (isDbConfigured() || !req.path.startsWith('/api/') || req.path === '/api/health') {
+        return next();
+    }
+    return res.status(503).json({
+        success: false,
+        error: 'Database not configured. Set DATABASE_URL to your PostgreSQL connection string.'
+    });
+});
+
 const apiRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: IS_PRODUCTION ? 200 : 1000,
@@ -264,6 +301,11 @@ const formRateLimiter = rateLimit({
 });
 
 app.use('/api/', apiRateLimiter);
+
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -297,35 +339,6 @@ app.use((req, res, next) => {
     next();
 });
 
-async function initDatabase() {
-    try {
-        console.log('Testing Supabase connection...');
-        // startup — ping supabase
-        const { data, error } = await supabase.from('messages').select('id').limit(1);
-        
-        if (error) {
-            // missing table is fine on first deploy
-            if (error.code === 'PGRST116') {
-                console.log('Supabase connection successful (messages table does not exist yet)');
-            } else {
-                console.error('Supabase connection error:', error);
-                console.error('Error code:', error.code);
-                console.error('Error message:', error.message);
-                console.error('Error details:', error.details);
-                throw error;
-            }
-        } else {
-            console.log('Connected to Supabase database successfully');
-            console.log(`  Supabase URL: ${supabaseUrl}`);
-        }
-        return Promise.resolve();
-    } catch (err) {
-        console.error('Database connection failed:', err.message);
-        console.error('Full error:', err);
-        return Promise.reject(err);
-    }
-}
-
 function getClientIp(req) {
     return req.headers['x-forwarded-for']?.split(',')[0] || 
            req.connection.remoteAddress || 
@@ -342,13 +355,17 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'ok', 
-        message: 'KNS College API is running',
+    res.json({
+        status: isDbConfigured() ? 'ok' : 'degraded',
+        message: isDbConfigured()
+            ? 'KNS College API is running'
+            : 'KNS College API is running but DATABASE_URL is not configured',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development',
-        supabase_configured: !!(supabaseUrl && supabaseAnonKey),
+        iisnode: IS_IISNODE,
+        node_version: process.version,
+        database_configured: isDbConfigured(),
         sendgrid_configured: !!sendgridApiKey,
         monime_checkout_configured: !!(MONIME_ACCESS_TOKEN && MONIME_SPACE_ID),
         monime_token_mode: MONIME_TOKEN_MODE,
@@ -441,7 +458,7 @@ app.get('/api/test', requireAdminApiKey, (req, res) => {
         origin: req.headers.origin || 'none',
         referer: req.headers.referer || 'none',
         host: req.headers.host || 'none',
-        supabase_configured: !!(supabaseUrl && supabaseAnonKey)
+        database_configured: isDbConfigured()
     });
 });
 
@@ -487,11 +504,7 @@ function aggregateOnlineCourseRatings(rows) {
 }
 
 async function fetchRatingAggregateForCourse(courseKey) {
-    const { data, error } = await supabase
-        .from('online_course_ratings')
-        .select('stars')
-        .eq('course_key', courseKey);
-    if (error) throw error;
+    const data = await db.getRatingStarsForCourse(courseKey);
     if (!data || !data.length) {
         return { course_key: courseKey, average: null, count: 0 };
     }
@@ -506,37 +519,32 @@ async function fetchRatingAggregateForCourse(courseKey) {
 
 app.get('/api/online-courses', async (req, res) => {
     try {
-        const { data: catRows, error: catErr } = await supabase
-            .from('online_course_categories')
-            .select('slug, section_title, section_lead, sort_order')
-            .order('sort_order', { ascending: true });
-        if (catErr) {
-            if (catErr.code === 'PGRST116' || catErr.code === '42P01') {
+        let catRows;
+        try {
+            catRows = await db.listOnlineCourseCategories();
+        } catch (catErr) {
+            if (isMissingRelation(catErr)) {
                 return res.json({
                     success: true,
                     categories: [],
                     courses: [],
-                    message: 'Catalog tables not found; create online_course_categories and online_courses in Supabase.'
+                    message: 'Catalog tables not found; run npm run db:migrate on the server.'
                 });
             }
             console.error('online-courses GET categories:', catErr);
             return res.status(500).json({ success: false, error: 'Failed to load course categories' });
         }
 
-        const { data: courseRows, error: courseErr } = await supabase
-            .from('online_courses')
-            .select(
-                'category_slug, course_key, display_title, enroll_course_name, price_label, structured_text, pace_text, amount_sle_minor, sort_order, is_active'
-            )
-            .eq('is_active', true)
-            .order('sort_order', { ascending: true });
-        if (courseErr) {
-            if (courseErr.code === 'PGRST116' || courseErr.code === '42P01') {
+        let courseRows;
+        try {
+            courseRows = await db.listActiveOnlineCourses();
+        } catch (courseErr) {
+            if (isMissingRelation(courseErr)) {
                 return res.json({
                     success: true,
                     categories: [],
                     courses: [],
-                    message: 'Catalog tables not found; create online_course_categories and online_courses in Supabase.'
+                    message: 'Catalog tables not found; run npm run db:migrate on the server.'
                 });
             }
             console.error('online-courses GET courses:', courseErr);
@@ -573,12 +581,12 @@ app.get('/api/online-courses', async (req, res) => {
 
 app.get('/api/online-course-ratings', async (req, res) => {
     try {
-        const { data, error } = await supabase
-            .from('online_course_ratings')
-            .select('course_key, stars');
-        if (error) {
-            if (error.code === 'PGRST116' || error.code === '42P01') {
-                return res.json({ success: true, ratings: [], message: 'Ratings table not found; create online_course_ratings in Supabase.' });
+        let data;
+        try {
+            data = await db.listOnlineCourseRatingRows();
+        } catch (error) {
+            if (isMissingRelation(error)) {
+                return res.json({ success: true, ratings: [], message: 'Ratings table not found; run npm run db:migrate.' });
             }
             console.error('online-course-ratings GET:', error);
             return res.status(500).json({ success: false, error: 'Failed to load ratings' });
@@ -625,23 +633,21 @@ app.post('/api/online-course-ratings', async (req, res) => {
         }
 
         const userAgent = getUserAgent(req);
-        const { error: insertError } = await supabase.from('online_course_ratings').insert([
-            {
+        try {
+            await db.insertOnlineCourseRating({
                 course_key,
                 stars,
                 comment,
                 rater_email,
                 ip_address: ipAddress,
                 user_agent: userAgent
-            }
-        ]);
-
-        if (insertError) {
+            });
+        } catch (insertError) {
             console.error('online-course-ratings POST insert:', insertError);
-            if (insertError.code === 'PGRST116' || insertError.code === '42P01') {
+            if (isMissingRelation(insertError)) {
                 return res.status(500).json({
                     success: false,
-                    error: 'Ratings storage is not set up yet. Create the online_course_ratings table in Supabase.'
+                    error: 'Ratings storage is not set up yet. Run npm run db:migrate on the server.'
                 });
             }
             return res.status(500).json({ success: false, error: 'Failed to save rating' });
@@ -727,23 +733,13 @@ async function lookupOnlineCourseAmountSleMinor(courseNameTrimmed) {
     const cn = String(courseNameTrimmed || '').trim();
     if (!cn) return null;
     try {
-        const { data: byEnroll, error: e1 } = await supabase
-            .from('online_courses')
-            .select('amount_sle_minor')
-            .eq('is_active', true)
-            .eq('enroll_course_name', cn)
-            .maybeSingle();
-        if (!e1 && byEnroll && byEnroll.amount_sle_minor != null) {
+        const byEnroll = await db.getCourseAmountByEnrollName(cn);
+        if (byEnroll && byEnroll.amount_sle_minor != null) {
             const n = parseInt(byEnroll.amount_sle_minor, 10);
             if (Number.isInteger(n) && n >= 1 && n <= 100000000) return n;
         }
-        const { data: byKey, error: e2 } = await supabase
-            .from('online_courses')
-            .select('amount_sle_minor')
-            .eq('is_active', true)
-            .eq('course_key', cn)
-            .maybeSingle();
-        if (!e2 && byKey && byKey.amount_sle_minor != null) {
+        const byKey = await db.getCourseAmountByKey(cn);
+        if (byKey && byKey.amount_sle_minor != null) {
             const n = parseInt(byKey.amount_sle_minor, 10);
             if (Number.isInteger(n) && n >= 1 && n <= 100000000) return n;
         }
@@ -967,53 +963,31 @@ app.get('/api/scholarships/diagnostics', requireAdminApiKey, async (req, res) =>
     try {
         const diagnostics = {
             timestamp: new Date().toISOString(),
-            supabase_configured: !!(supabaseUrl && supabaseAnonKey),
-            supabase_url_set: !!supabaseUrl,
-            supabase_key_set: !!supabaseAnonKey,
+            database_configured: isDbConfigured(),
             tests: {}
         };
-        
-        // diagnostics — table access
+
         try {
-            const { data: testData, error: testError, count } = await supabase
-                .from('scholarships')
-                .select('*', { count: 'exact' })
-                .limit(1);
-            
+            const count = await db.countScholarships();
+            const testData = await db.sampleScholarships(1);
             diagnostics.tests.table_access = {
-                success: !testError,
-                error: testError ? {
-                    code: testError.code,
-                    message: testError.message,
-                    details: testError.details,
-                    hint: testError.hint
-                } : null,
-                record_count: count || 0,
-                sample_record: testData && testData.length > 0 ? testData[0] : null
+                success: true,
+                record_count: count,
+                sample_record: testData.length > 0 ? testData[0] : null
             };
         } catch (err) {
             diagnostics.tests.table_access = {
                 success: false,
-                error: { message: err.message }
+                error: { message: err.message, code: err.code }
             };
         }
-        
-        // diagnostics — active scholarships
+
         try {
-            const { data: activeData, error: activeError } = await supabase
-                .from('scholarships')
-                .select('id, title, is_active, deadline')
-                .eq('is_active', true)
-                .limit(10);
-            
+            const activeData = await db.listScholarshipsSample(10, true);
             diagnostics.tests.active_scholarships = {
-                success: !activeError,
-                error: activeError ? {
-                    code: activeError.code,
-                    message: activeError.message
-                } : null,
-                count: activeData ? activeData.length : 0,
-                records: activeData || []
+                success: true,
+                count: activeData.length,
+                records: activeData
             };
         } catch (err) {
             diagnostics.tests.active_scholarships = {
@@ -1021,22 +995,13 @@ app.get('/api/scholarships/diagnostics', requireAdminApiKey, async (req, res) =>
                 error: { message: err.message }
             };
         }
-        
-        // diagnostics — all scholarships
+
         try {
-            const { data: allData, error: allError } = await supabase
-                .from('scholarships')
-                .select('id, title, is_active')
-                .limit(10);
-            
+            const allData = await db.listScholarshipsSample(10, false);
             diagnostics.tests.all_scholarships = {
-                success: !allError,
-                error: allError ? {
-                    code: allError.code,
-                    message: allError.message
-                } : null,
-                count: allData ? allData.length : 0,
-                records: allData || []
+                success: true,
+                count: allData.length,
+                records: allData
             };
         } catch (err) {
             diagnostics.tests.all_scholarships = {
@@ -1044,11 +1009,11 @@ app.get('/api/scholarships/diagnostics', requireAdminApiKey, async (req, res) =>
                 error: { message: err.message }
             };
         }
-        
+
         res.json({ success: true, diagnostics });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             error: error.message,
             stack: IS_PRODUCTION ? undefined : error.stack
         });
@@ -1058,45 +1023,46 @@ app.get('/api/scholarships/diagnostics', requireAdminApiKey, async (req, res) =>
 app.get('/api/scholarships/test', requireAdminApiKey, async (req, res) => {
     try {
         console.log('Testing scholarships connection...');
-        
-        // scholarships test — table query
-        const { data: testData, error: testError, count } = await supabase
-            .from('scholarships')
-            .select('*', { count: 'exact' })
-            .limit(1);
-        
+
+        let testData = [];
+        let count = 0;
+        let testError = null;
+        try {
+            count = await db.countScholarships();
+            testData = await db.sampleScholarships(1);
+        } catch (err) {
+            testError = err;
+        }
+
         const result = {
             timestamp: new Date().toISOString(),
-            supabase_connected: !testError,
-            table_exists: !testError || (testError && testError.code !== 'PGRST116' && testError.code !== '42P01'),
-            total_records: count || 0,
-            test_query_error: testError ? {
-                code: testError.code,
-                message: testError.message,
-                details: testError.details,
-                hint: testError.hint
-            } : null,
-            sample_record: testData && testData.length > 0 ? testData[0] : null
+            database_connected: !testError,
+            table_exists: !testError || !isMissingRelation(testError),
+            total_records: count,
+            test_query_error: testError
+                ? { code: testError.code, message: testError.message }
+                : null,
+            sample_record: testData.length > 0 ? testData[0] : null
         };
-        
-        // scholarships test — active rows
-        const { data: activeData, error: activeError } = await supabase
-            .from('scholarships')
-            .select('id, title, is_active')
-            .eq('is_active', true)
-            .limit(5);
-        
-        result.active_scholarships_count = activeData ? activeData.length : 0;
-        result.active_scholarships = activeData || [];
-        result.active_query_error = activeError ? {
-            code: activeError.code,
-            message: activeError.message
-        } : null;
-        
+
+        try {
+            const activeData = await db.listScholarshipsSample(5, true);
+            result.active_scholarships_count = activeData.length;
+            result.active_scholarships = activeData;
+            result.active_query_error = null;
+        } catch (activeError) {
+            result.active_scholarships_count = 0;
+            result.active_scholarships = [];
+            result.active_query_error = {
+                code: activeError.code,
+                message: activeError.message
+            };
+        }
+
         res.json({ success: true, test: result });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             error: error.message,
             stack: IS_PRODUCTION ? undefined : error.stack
         });
@@ -1121,26 +1087,21 @@ app.post('/api/messages', formRateLimiter, async (req, res) => {
     const ipAddress = getClientIp(req);
     const userAgent = getUserAgent(req);
     
-    const { data, error } = await supabase
-        .from('messages')
-        .insert([
-            {
-                session_id: sessionId,
-                sender: sender,
-                message: message,
-                ip_address: ipAddress,
-                user_agent: userAgent
-            }
-        ])
-        .select()
-        .single();
-    
-    if (error) {
+    let data;
+    try {
+        data = await db.insertMessage({
+            session_id: sessionId,
+            sender,
+            message,
+            ip_address: ipAddress,
+            user_agent: userAgent
+        });
+    } catch (error) {
         console.error('Error saving message:', error);
         return res.status(500).json({ error: 'Failed to save message' });
     }
-    
-    res.json({ 
+
+    res.json({
         success: true, 
         messageId: data.id,
         message: 'Message saved successfully' 
@@ -1149,19 +1110,14 @@ app.post('/api/messages', formRateLimiter, async (req, res) => {
 
 app.get('/api/messages/:sessionId', requireAdminApiKey, async (req, res) => {
     const { sessionId } = req.params;
-    
-    const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('timestamp', { ascending: true });
-    
-    if (error) {
+
+    try {
+        const data = await db.getMessagesBySession(sessionId);
+        res.json({ success: true, messages: data || [] });
+    } catch (error) {
         console.error('Error fetching messages:', error);
         return res.status(500).json({ error: 'Failed to fetch messages' });
     }
-    
-    res.json({ success: true, messages: data || [] });
 });
 
 app.post('/api/contacts', formRateLimiter, async (req, res) => {
@@ -1177,28 +1133,20 @@ app.post('/api/contacts', formRateLimiter, async (req, res) => {
     const userAgent = getUserAgent(req);
     
     // contact form — save to DB
-    const { data, error } = await supabase
-        .from('contacts')
-        .insert([
-            {
-                name: name,
-                email: email,
-                phone: phone || null,
-                subject: subject,
-                message: message,
-                ip_address: ipAddress,
-                user_agent: userAgent
-            }
-        ])
-        .select()
-        .single();
-    
-    if (error) {
+    let data;
+    try {
+        data = await db.insertContact({
+            name,
+            email,
+            phone: phone || null,
+            subject,
+            message,
+            ip_address: ipAddress,
+            user_agent: userAgent
+        });
+    } catch (error) {
         console.error('Error saving contact:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
-        return res.status(500).json({ 
+        return res.status(500).json({
             error: 'Failed to save contact submission',
             details: error.message || 'Unknown database error',
             code: error.code
@@ -1293,17 +1241,13 @@ Submitted At: ${new Date().toISOString()}
 });
 
 app.get('/api/contacts', requireAdminApiKey, async (req, res) => {
-    const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('timestamp', { ascending: false });
-    
-    if (error) {
+    try {
+        const data = await db.listContacts();
+        res.json({ success: true, contacts: data || [] });
+    } catch (error) {
         console.error('Error fetching contacts:', error);
         return res.status(500).json({ error: 'Failed to fetch contacts' });
     }
-    
-    res.json({ success: true, contacts: data || [] });
 });
 
 app.post('/api/enquiries', formRateLimiter, async (req, res) => {
@@ -1319,25 +1263,20 @@ app.post('/api/enquiries', formRateLimiter, async (req, res) => {
     const userAgent = getUserAgent(req);
     const newsletterValue = newsletter === true || newsletter === 'yes' || newsletter === 1 || newsletter === 'true';
     
-    const { data, error } = await supabase
-        .from('enquiries')
-        .insert([
-            {
-                name: name,
-                email: email,
-                phone: phone || null,
-                programme_interest: programme_interest,
-                preferred_intake: preferred_intake || null,
-                message: message || null,
-                newsletter: newsletterValue,
-                ip_address: ipAddress,
-                user_agent: userAgent
-            }
-        ])
-        .select()
-        .single();
-    
-    if (error) {
+    let data;
+    try {
+        data = await db.insertEnquiry({
+            name,
+            email,
+            phone: phone || null,
+            programme_interest,
+            preferred_intake: preferred_intake || null,
+            message: message || null,
+            newsletter: newsletterValue,
+            ip_address: ipAddress,
+            user_agent: userAgent
+        });
+    } catch (error) {
         console.error('Error saving enquiry:', error);
         return res.status(500).json({ error: 'Failed to save enquiry submission' });
     }
@@ -1434,17 +1373,13 @@ Submitted At: ${new Date().toISOString()}
 });
 
 app.get('/api/enquiries', requireAdminApiKey, async (req, res) => {
-    const { data, error } = await supabase
-        .from('enquiries')
-        .select('*')
-        .order('timestamp', { ascending: false });
-    
-    if (error) {
+    try {
+        const data = await db.listEnquiries();
+        res.json({ success: true, enquiries: data || [] });
+    } catch (error) {
         console.error('Error fetching enquiries:', error);
         return res.status(500).json({ error: 'Failed to fetch enquiries' });
     }
-    
-    res.json({ success: true, enquiries: data || [] });
 });
 
 app.post('/api/enrollments', formRateLimiter, async (req, res) => {
@@ -1468,26 +1403,21 @@ app.post('/api/enrollments', formRateLimiter, async (req, res) => {
     const ipAddress = getClientIp(req);
     const userAgent = getUserAgent(req);
     
-    const { data, error } = await supabase
-        .from('enrollments')
-        .insert([
-            {
-                course_name: courseName,
-                first_name: firstName,
-                last_name: lastName,
-                email: email,
-                phone: phone || null,
-                payment_method: paymentMethod || null,
-                mobile_number: mobileNumber || null,
-                enrollment_fee: enrollmentFee || 'Le1,000',
-                ip_address: ipAddress,
-                user_agent: userAgent
-            }
-        ])
-        .select()
-        .single();
-    
-    if (error) {
+    let data;
+    try {
+        data = await db.insertEnrollment({
+            course_name: courseName,
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            phone: phone || null,
+            payment_method: paymentMethod || null,
+            mobile_number: mobileNumber || null,
+            enrollment_fee: enrollmentFee || 'Le1,000',
+            ip_address: ipAddress,
+            user_agent: userAgent
+        });
+    } catch (error) {
         console.error('Error saving enrollment:', error);
         return res.status(500).json({ error: 'Failed to save enrollment submission' });
     }
@@ -1500,17 +1430,13 @@ app.post('/api/enrollments', formRateLimiter, async (req, res) => {
 });
 
 app.get('/api/enrollments', requireAdminApiKey, async (req, res) => {
-    const { data, error } = await supabase
-        .from('enrollments')
-        .select('*')
-        .order('timestamp', { ascending: false });
-    
-    if (error) {
+    try {
+        const data = await db.listEnrollments();
+        res.json({ success: true, enrollments: data || [] });
+    } catch (error) {
         console.error('Error fetching enrollments:', error);
         return res.status(500).json({ error: 'Failed to fetch enrollments' });
     }
-    
-    res.json({ success: true, enrollments: data || [] });
 });
 
 app.post('/api/payments', formRateLimiter, async (req, res) => {
@@ -1540,35 +1466,30 @@ app.post('/api/payments', formRateLimiter, async (req, res) => {
     const ipAddress = getClientIp(req);
     const userAgent = getUserAgent(req);
     
-    const { data, error } = await supabase
-        .from('payments')
-        .insert([
-            {
-                course_name: courseName,
-                full_name: fullName,
-                email: email,
-                phone: phone,
-                address: address,
-                city: city,
-                country: country || 'Sierra Leone',
-                date_of_birth: dateOfBirth || null,
-                gender: gender || null,
-                emergency_contact: emergencyContact || null,
-                emergency_phone: emergencyPhone || null,
-                delivery_mode: deliveryMode,
-                intake_period: intakePeriod,
-                application_fee: APPLICATION_FEE_SLE,
-                payment_status: 'pending',
-                payment_reference: paymentReference || null,
-                payment_provider: 'monime',
-                ip_address: ipAddress,
-                user_agent: userAgent
-            }
-        ])
-        .select()
-        .single();
-    
-    if (error) {
+    let data;
+    try {
+        data = await db.insertPayment({
+            course_name: courseName,
+            full_name: fullName,
+            email,
+            phone,
+            address,
+            city,
+            country: country || 'Sierra Leone',
+            date_of_birth: dateOfBirth || null,
+            gender: gender || null,
+            emergency_contact: emergencyContact || null,
+            emergency_phone: emergencyPhone || null,
+            delivery_mode: deliveryMode,
+            intake_period: intakePeriod,
+            application_fee: APPLICATION_FEE_SLE,
+            payment_status: 'pending',
+            payment_reference: paymentReference || null,
+            payment_provider: 'monime',
+            ip_address: ipAddress,
+            user_agent: userAgent
+        });
+    } catch (error) {
         console.error('Error saving payment:', error);
         return res.status(500).json({ error: 'Failed to save payment submission' });
     }
@@ -1607,13 +1528,10 @@ app.post('/api/payments/return-status', formRateLimiter, async (req, res) => {
         return res.status(400).json({ error: 'Invalid paymentStatus' });
     }
 
-    const { data: existing, error: lookupError } = await supabase
-        .from('payments')
-        .select('id, payment_reference, payment_status')
-        .eq('payment_reference', String(paymentReference).trim())
-        .maybeSingle();
-
-    if (lookupError) {
+    let existing;
+    try {
+        existing = await db.getPaymentByReference(String(paymentReference).trim());
+    } catch (lookupError) {
         console.error('Error looking up payment:', lookupError);
         return res.status(500).json({ error: 'Failed to look up payment' });
     }
@@ -1626,14 +1544,10 @@ app.post('/api/payments/return-status', formRateLimiter, async (req, res) => {
         return res.status(403).json({ error: 'Invalid status update token' });
     }
 
-    const { data, error } = await supabase
-        .from('payments')
-        .update({ payment_status: paymentStatus })
-        .eq('id', existing.id)
-        .select('id, payment_status, payment_reference')
-        .single();
-
-    if (error) {
+    let data;
+    try {
+        data = await db.updatePaymentStatusById(existing.id, paymentStatus);
+    } catch (error) {
         console.error('Error updating payment:', error);
         return res.status(500).json({ error: 'Failed to update payment status' });
     }
@@ -1655,31 +1569,24 @@ app.patch('/api/payments/:paymentId', requireAdminApiKey, async (req, res) => {
         });
     }
     
-    const updateData = {
-        payment_status: paymentStatus
-    };
-    
+    const updateData = { payment_status: paymentStatus };
     if (paymentReference) {
         updateData.payment_reference = paymentReference;
     }
-    
-    const { data, error } = await supabase
-        .from('payments')
-        .update(updateData)
-        .eq('id', paymentId)
-        .select()
-        .single();
-    
-    if (error) {
+
+    let data;
+    try {
+        data = await db.updatePaymentById(paymentId, updateData);
+    } catch (error) {
         console.error('Error updating payment:', error);
         return res.status(500).json({ error: 'Failed to update payment status' });
     }
-    
+
     if (!data) {
         return res.status(404).json({ error: 'Payment record not found' });
     }
-    
-    res.json({ 
+
+    res.json({
         success: true, 
         payment: data,
         message: 'Payment status updated successfully' 
@@ -1688,84 +1595,48 @@ app.patch('/api/payments/:paymentId', requireAdminApiKey, async (req, res) => {
 
 app.get('/api/payments', requireAdminApiKey, async (req, res) => {
     const { status, course, reference } = req.query;
-    
-    let query = supabase
-        .from('payments')
-        .select('*');
-    
-    if (status) {
-        query = query.eq('payment_status', status);
-    }
-    
-    if (course) {
-        query = query.eq('course_name', course);
-    }
-    
-    if (reference) {
-        query = query.eq('payment_reference', reference);
-    }
-    
-    query = query.order('timestamp', { ascending: false });
-    
-    const { data, error } = await query;
-    
-    if (error) {
+
+    try {
+        const data = await db.listPayments({ status, course, reference });
+        res.json({ success: true, payments: data || [] });
+    } catch (error) {
         console.error('Error fetching payments:', error);
         return res.status(500).json({ error: 'Failed to fetch payments' });
     }
-    
-    res.json({ success: true, payments: data || [] });
 });
 
 app.get('/api/scholarships', async (req, res) => {
     try {
-        // scholarships list — active only
-        let query = supabase
-            .from('scholarships')
-            .select('*')
-            .eq('is_active', true)
-            .order('deadline', { ascending: true });
-        
-        const { data, error } = await query;
-        
-        if (error) {
+        let data;
+        try {
+            data = await db.listActiveScholarships();
+        } catch (error) {
             console.error('Error fetching scholarships:', error.code, error.message);
-            
-            // map common supabase errors
-            if (error.code === 'PGRST116' || error.code === '42P01') {
-                return res.status(500).json({ 
+            if (isMissingRelation(error)) {
+                return res.status(500).json({
                     error: 'Scholarships table not found',
-                    details: 'The scholarships table does not exist in the database. Please create it in Supabase.'
+                    details: 'Run npm run db:migrate on the server to create database tables.'
                 });
             }
-            
-            if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
-                return res.status(500).json({ 
-                    error: 'Permission denied',
-                    details: 'Row Level Security (RLS) policies are blocking access to scholarships. Please create a public SELECT policy in Supabase.'
-                });
-            }
-            
-            return res.status(500).json({ 
+            return res.status(500).json({
                 error: 'Failed to fetch scholarships',
                 details: error.message || 'Unknown database error',
                 code: error.code
             });
         }
-        
-        // empty list — still 200 with a hint
+
         if (!data || data.length === 0) {
-            return res.json({ 
-                success: true, 
+            return res.json({
+                success: true,
                 scholarships: [],
-                message: 'No active scholarships found. Check Supabase to ensure scholarships exist and have is_active = true.'
+                message: 'No active scholarships found. Add rows to the scholarships table with is_active = true.'
             });
         }
-        
+
         res.json({ success: true, scholarships: data || [] });
     } catch (error) {
         console.error('Unexpected error fetching scholarships:', error.message);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to fetch scholarships',
             details: error.message || 'Unexpected server error'
         });
@@ -1774,27 +1645,14 @@ app.get('/api/scholarships', async (req, res) => {
 
 app.get('/api/scholarships/:id', async (req, res) => {
     const { id } = req.params;
-    
+
     try {
-        const { data, error } = await supabase
-            .from('scholarships')
-            .select('*')
-            .eq('id', id)
-            .eq('is_active', true)
-            .single();
-        
-        if (error) {
-            console.error('Error fetching scholarship:', error);
-            if (error.code === 'PGRST116') {
-                return res.status(404).json({ error: 'Scholarship not found' });
-            }
-            return res.status(500).json({ error: 'Failed to fetch scholarship' });
-        }
-        
+        const data = await db.getActiveScholarshipById(id);
+
         if (!data) {
             return res.status(404).json({ error: 'Scholarship not found' });
         }
-        
+
         res.json({ success: true, scholarship: data });
     } catch (error) {
         console.error('Error fetching scholarship:', error);
@@ -1811,18 +1669,13 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
     }
     
     try {
-        const { data, error } = await supabase
-            .from('scholarships')
-            .select('*')
-            .eq('id', id)
-            .eq('is_active', true)
-            .single();
-        
-        if (error || !data) {
+        const data = await db.getActiveScholarshipById(id);
+
+        if (!data) {
             console.error(`Download error: Scholarship ${id} not found`);
-            return res.status(404).json({ error: 'Scholarship not found', details: error?.message });
+            return res.status(404).json({ error: 'Scholarship not found' });
         }
-        
+
         const filePath = type === 'guide' ? data.guide_path : data.form_path;
         
         if (!filePath || filePath === '#' || filePath.trim() === '') {
@@ -1926,17 +1779,12 @@ app.get('/api/scholarships/:id/files/check', requireAdminApiKey, async (req, res
     const { id } = req.params;
     
     try {
-        const { data, error } = await supabase
-            .from('scholarships')
-            .select('*')
-            .eq('id', id)
-            .eq('is_active', true)
-            .single();
-        
-        if (error || !data) {
+        const data = await db.getActiveScholarshipById(id);
+
+        if (!data) {
             return res.status(404).json({ error: 'Scholarship not found' });
         }
-        
+
         const path = require('path');
         const fs = require('fs');
         
@@ -2028,54 +1876,45 @@ app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
         const userAgent = getUserAgent(req);
         
         // save application
-        const { data, error } = await supabase
-            .from('scholarship_applications')
-            .insert([
-                {
-                    scholarship_id: scholarship_id || null,
-                    surname: surname,
-                    first_name: first_name,
-                    other_names: other_names || null,
-                    gender: gender,
-                    date_of_birth: date_of_birth,
-                    nationality: nationality,
-                    national_id: national_id.trim(),
-                    address: address,
-                    city: city,
-                    phone: phone,
-                    email: email,
-                    highest_qualification: highest_qualification,
-                    school_institution: school_institution,
-                    year_of_completion: parseInt(year_of_completion),
-                    credits: credits || null,
-                    programme: programme,
-                    scholarship_type: scholarship_type,
-                    previous_application: previous_application,
-                    previous_application_details: previous_application === 'Yes' ? previous_application_details : null,
-                    personal_statement: personal_statement,
-                    documents_submitted_in_person: true,
-                    ip_address: ipAddress,
-                    user_agent: userAgent
-                }
-            ])
-            .select()
-            .single();
-        
-        if (error) {
+        let data;
+        try {
+            data = await db.insertScholarshipApplication({
+                scholarship_id: scholarship_id || null,
+                surname,
+                first_name,
+                other_names: other_names || null,
+                gender,
+                date_of_birth,
+                nationality,
+                national_id: national_id.trim(),
+                address,
+                city,
+                phone,
+                email,
+                highest_qualification,
+                school_institution,
+                year_of_completion: parseInt(year_of_completion, 10),
+                credits: credits || null,
+                programme,
+                scholarship_type,
+                previous_application,
+                previous_application_details:
+                    previous_application === 'Yes' ? previous_application_details : null,
+                personal_statement,
+                documents_submitted_in_person: true,
+                ip_address: ipAddress,
+                user_agent: userAgent
+            });
+        } catch (error) {
             console.error('Error saving scholarship application:', error);
-            console.error('Error code:', error.code);
-            console.error('Error message:', error.message);
-            console.error('Error details:', error.details);
-            console.error('Error hint:', error.hint);
-            return res.status(500).json({ 
+            return res.status(500).json({
                 error: 'Failed to save scholarship application',
                 details: error.message || 'Unknown database error',
                 code: error.code,
-                hint: error.hint || null,
                 fullError: process.env.NODE_ENV === 'development' ? error : undefined
             });
         }
-        
+
         // sendgrid notification (fire and forget)
         if (sendgridApiKey && sendgridFromEmail && sendgridToEmail) {
             const subjectLine = `New Scholarship Application: ${programme} - ${first_name} ${surname}`;
@@ -2268,29 +2107,14 @@ Submitted At: ${new Date().toISOString()}
 
 app.get('/api/scholarship-applications', requireAdminApiKey, async (req, res) => {
     const { scholarship_id, status } = req.query;
-    
-    let query = supabase
-        .from('scholarship_applications')
-        .select('*');
-    
-    if (scholarship_id) {
-        query = query.eq('scholarship_id', scholarship_id);
-    }
-    
-    if (status) {
-        query = query.eq('status', status);
-    }
-    
-    query = query.order('timestamp', { ascending: false });
-    
-    const { data, error } = await query;
-    
-    if (error) {
+
+    try {
+        const data = await db.listScholarshipApplications({ scholarship_id, status });
+        res.json({ success: true, applications: data || [] });
+    } catch (error) {
         console.error('Error fetching scholarship applications:', error);
         return res.status(500).json({ error: 'Failed to fetch scholarship applications' });
     }
-    
-    res.json({ success: true, applications: data || [] });
 });
 
 app.get('/api/stats', requireAdminApiKey, async (req, res) => {
@@ -2298,34 +2122,38 @@ app.get('/api/stats', requireAdminApiKey, async (req, res) => {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const sevenDaysAgoISO = sevenDaysAgo.toISOString();
-        
-        // totals across tables
-        const [totalMessagesResult, totalContactsResult, totalEnrollmentsResult, totalPaymentsResult] = await Promise.all([
-            supabase.from('messages').select('id', { count: 'exact', head: true }),
-            supabase.from('contacts').select('id', { count: 'exact', head: true }),
-            supabase.from('enrollments').select('id', { count: 'exact', head: true }),
-            supabase.from('payments').select('id', { count: 'exact', head: true })
+
+        const [
+            totalMessages,
+            totalContacts,
+            totalEnrollments,
+            totalPayments,
+            recentMessages,
+            recentContacts,
+            recentEnrollments,
+            recentPayments
+        ] = await Promise.all([
+            db.countRows('messages'),
+            db.countRows('contacts'),
+            db.countRows('enrollments'),
+            db.countRows('payments'),
+            db.countRows('messages', sevenDaysAgoISO),
+            db.countRows('contacts', sevenDaysAgoISO),
+            db.countRows('enrollments', sevenDaysAgoISO),
+            db.countRows('payments', sevenDaysAgoISO)
         ]);
-        
-        // last 7 days
-        const [recentMessagesResult, recentContactsResult, recentEnrollmentsResult, recentPaymentsResult] = await Promise.all([
-            supabase.from('messages').select('id', { count: 'exact', head: true }).gte('timestamp', sevenDaysAgoISO),
-            supabase.from('contacts').select('id', { count: 'exact', head: true }).gte('timestamp', sevenDaysAgoISO),
-            supabase.from('enrollments').select('id', { count: 'exact', head: true }).gte('timestamp', sevenDaysAgoISO),
-            supabase.from('payments').select('id', { count: 'exact', head: true }).gte('timestamp', sevenDaysAgoISO)
-        ]);
-        
+
         const stats = {
-            totalMessages: totalMessagesResult.count || 0,
-            totalContacts: totalContactsResult.count || 0,
-            totalEnrollments: totalEnrollmentsResult.count || 0,
-            totalPayments: totalPaymentsResult.count || 0,
-            recentMessages: recentMessagesResult.count || 0,
-            recentContacts: recentContactsResult.count || 0,
-            recentEnrollments: recentEnrollmentsResult.count || 0,
-            recentPayments: recentPaymentsResult.count || 0
+            totalMessages,
+            totalContacts,
+            totalEnrollments,
+            totalPayments,
+            recentMessages,
+            recentContacts,
+            recentEnrollments,
+            recentPayments
         };
-        
+
         res.json({ success: true, stats });
     } catch (error) {
         console.error('Error fetching stats:', error);
@@ -2346,13 +2174,20 @@ app.use('/api/*', (req, res) => {
 
 app.use((err, req, res, next) => {
     if (err && err.message === 'Not allowed by CORS') {
-        return res.status(403).json({ error: 'Not allowed by CORS' });
+        const origin = req.headers.origin || '';
+        const payload = { error: 'Not allowed by CORS' };
+        if (!IS_PRODUCTION && origin) {
+            payload.origin = origin;
+            payload.hint =
+                'Open the site at http://localhost:3000 (npm run dev), or add this origin to CORS_ORIGIN in .env.local.';
+        }
+        return res.status(403).json(payload);
     }
     next(err);
 });
 
 app.post(
-    ['/checkout-success.html', '/checkout-cancelled.html', '/payment-success.html', '/payment-cancelled.html'],
+    ['/checkout-success.html', '/checkout-cancelled.html', '/payment-success.html', '/payment-cancelled.html', '/payment-failed.html'],
     (req, res) => {
         const loc = req.originalUrl && req.originalUrl.startsWith('/') ? req.originalUrl : req.url || '/';
         res.redirect(303, loc);
@@ -2375,27 +2210,37 @@ app.use('/scholarships', express.static('scholarships', {
 
 let server;
 
-initDatabase()
-    .then(() => {
-        const onListen = () => {
-            const hostLabel = IS_IISNODE ? 'IIS/iisnode' : `http://0.0.0.0:${PORT}`;
-            console.log(`KNS API running (${hostLabel}, port ${PORT})`);
-            if (!IS_IISNODE) {
-                console.log('Render free tier: ping /api/health every 10-14 min if cold starts are a problem');
-            }
-        };
+function startHttpServer() {
+    const listenPort = process.env.PORT || PORT;
+    const onListen = () => {
+        const hostLabel = IS_IISNODE ? 'IIS/iisnode' : `http://0.0.0.0:${listenPort}`;
+        console.log(`KNS API running (${hostLabel}, port ${listenPort})`);
+        if (!IS_IISNODE) {
+            console.log('Render free tier: ping /api/health every 10-14 min if cold starts are a problem');
+        }
+    };
 
-        server = IS_IISNODE ? app.listen(PORT, onListen) : app.listen(PORT, '0.0.0.0', onListen);
+    server = IS_IISNODE ? app.listen(listenPort, onListen) : app.listen(listenPort, '0.0.0.0', onListen);
 
-        server.on('error', (err) => {
-            console.error('Server error:', err);
-            process.exit(1);
-        });
-    })
-    .catch((err) => {
-        console.error('Failed to initialize database:', err);
+    server.on('error', (err) => {
+        console.error('Server error:', err);
         process.exit(1);
     });
+}
+
+initDatabase()
+    .then(startHttpServer)
+    .catch((err) => {
+        console.error('Failed to initialize database:', err.message || err);
+        if (IS_IISNODE) {
+            console.warn('Starting HTTP server anyway so /api/health can report the failure.');
+            startHttpServer();
+        } else {
+            process.exit(1);
+        }
+    });
+
+module.exports = app;
 
 const gracefulShutdown = (signal) => {
     console.log(`Shutting down (${signal})…`);

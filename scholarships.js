@@ -37,7 +37,7 @@ async function loadScholarships(scholarshipsGrid) {
         } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '') {
             apiBaseUrl = 'http://localhost:3000';
         } else {
-            apiBaseUrl = 'https://kns-college-website.onrender.com';
+            apiBaseUrl = window.location.origin.replace(/\/+$/, '');
         }
         
         const endpoint = (typeof CONFIG !== 'undefined' && CONFIG.ENDPOINTS && CONFIG.ENDPOINTS.SCHOLARSHIPS)
@@ -58,10 +58,11 @@ async function loadScholarships(scholarshipsGrid) {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            credentials: 'omit'
+            credentials: 'omit',
+            cache: 'no-store'
         });
         
-        if (!response.ok) {
+        if (!response.ok && response.status !== 304) {
             const contentType = response.headers.get('content-type');
             let errorText = '';
             let errorJson = null;

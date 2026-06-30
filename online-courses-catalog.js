@@ -32,7 +32,8 @@
                     data = {};
                 }
             }
-            return { ok: res.ok, data };
+            const ok = res.ok || res.status === 304;
+            return { ok, data, status: res.status };
         });
     }
 
@@ -276,7 +277,7 @@
                 if (!result.ok || !result.data?.success) {
                     const msg =
                         result.data?.error ||
-                        'Could not load courses. Make sure the API is running and the catalog tables exist in Supabase.';
+                        'Could not load courses. Make sure the API is running and run npm run db:setup.';
                     setError(msg);
                     document.dispatchEvent(
                         new CustomEvent('kns-online-courses-loaded', { detail: { count: 0, error: true } })
@@ -289,7 +290,7 @@
                 if (!courses.length) {
                     setError(
                         result.data.message ||
-                            'No courses yet. Run database/supabase_online_courses.sql in the Supabase SQL Editor.'
+                            'No courses in the catalog yet. Run npm run db:seed on the server.'
                     );
                     document.dispatchEvent(
                         new CustomEvent('kns-online-courses-loaded', { detail: { count: 0 } })
