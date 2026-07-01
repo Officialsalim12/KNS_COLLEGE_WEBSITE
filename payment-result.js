@@ -174,7 +174,7 @@
                 try {
                     sessionStorage.removeItem(tokenKey);
                 } catch (e) {
-                    /* ignore */
+                    // sessionStorage not available
                 }
             })
             .catch(() => {});

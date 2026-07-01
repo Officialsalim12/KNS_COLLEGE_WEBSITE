@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async function() {
-    // wait for CONFIG
+    // config.js might not be ready yet
     let retries = 0;
     const maxRetries = 10;
     while (typeof CONFIG === 'undefined' && retries < maxRetries) {
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const scholarshipId = urlParams.get('id') || urlParams.get('scholarship_id');
     
-    // no id — general application page
+    // no scholarship id — generic application form
     if (!scholarshipId) {
         const eligibilitySection = document.getElementById('eligibilitySection');
         const guideSection = document.getElementById('guideSection');
@@ -82,7 +82,7 @@ function populateScholarshipDetails(scholarship) {
         eligibilityContent.innerHTML = '<p class="content-text">Eligibility requirements are being updated. Please contact the scholarships office for more information.</p>';
     }
     
-    // fixed deadline — override API
+    // hardcoded deadline for now (overrides API date)
     const deadlineDate = new Date('2026-01-22T23:59:59');
     
     const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
@@ -97,7 +97,7 @@ function populateScholarshipDetails(scholarship) {
     
     document.getElementById('deadlineDate').innerHTML = `<span class="deadline-highlight">${formattedDeadline}</span>`;
     
-    // deadline countdown
+    // live countdown to deadline
     const countdownElement = document.getElementById('deadlineCountdown');
     if (countdownElement) {
         function formatTimePart(value, label) {
@@ -138,7 +138,7 @@ function populateScholarshipDetails(scholarship) {
         setInterval(updateCountdown, 1000);
     }
     
-    // apply button → scroll to form
+    // Apply Now scrolls down to the form
     const applyNowButton = document.getElementById('applyNowButton');
     if (applyNowButton) {
         applyNowButton.href = '#applicationFormSection';
@@ -203,7 +203,7 @@ function removePercentagesFromText(text) {
     
     let cleaned = text;
     
-    // strip % wording from award text
+    // strip % figures from award copy — client request
     cleaned = cleaned
         .replace(/Fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
         .replace(/fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
@@ -226,7 +226,7 @@ function getApiBaseUrl() {
         return CONFIG.API_BASE_URL;
     }
     
-    // localhost dev
+    // local dev — API on :3000
     const isLocalhost = window.location.hostname === 'localhost' || 
                        window.location.hostname === '127.0.0.1' ||
                        window.location.hostname === '';

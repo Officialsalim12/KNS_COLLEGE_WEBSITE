@@ -1,5 +1,5 @@
--- Production online course catalog (12 courses). Safe to re-run (upserts by slug / course_key).
--- Run after migrate: npm run db:seed
+-- Online course catalog seed data (12 courses).
+-- Idempotent: upserts on category slug and course_key. Run after schema migration.
 
 INSERT INTO online_course_categories (slug, section_title, section_lead, sort_order) VALUES
     ('business', 'Business & management', 'Project management, entrepreneurship, accounting, and business technology.', 10),
@@ -10,7 +10,7 @@ ON CONFLICT (slug) DO UPDATE SET
     section_lead = EXCLUDED.section_lead,
     sort_order = EXCLUDED.sort_order;
 
--- Deactivate courses not in the current catalog
+-- Deactivate courses not included in the current catalog.
 UPDATE online_courses SET is_active = FALSE
 WHERE course_key NOT IN (
     'Project Management',

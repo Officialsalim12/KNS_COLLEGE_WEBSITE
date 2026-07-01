@@ -23,7 +23,7 @@ async function main() {
     const sql = fs.readFileSync(path.join(__dirname, 'purge.sql'), 'utf8');
     console.log('Purging all application data...');
     await query(sql);
-    console.log('Purge complete — tables are empty (schema unchanged).');
+    console.log('Purge complete. Application tables are empty; schema is unchanged.');
     await closePool();
 }
 

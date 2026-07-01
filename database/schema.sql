@@ -1,4 +1,5 @@
--- KNS College — PostgreSQL schema (Render or any Postgres host)
+-- KNS College PostgreSQL schema.
+-- Compatible with Render PostgreSQL and other standard PostgreSQL hosts.
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 

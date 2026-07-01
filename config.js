@@ -54,7 +54,7 @@ function getApiBaseUrl() {
             localStorage.removeItem('API_BASE_URL');
         }
     } catch (e) {
-        /* ignore */
+        // localStorage blocked — carry on with defaults
     }
 
     const currentOrigin = window.location.origin;
@@ -65,7 +65,7 @@ function getApiBaseUrl() {
         if (/^http:\/\/(localhost|127\.0\.0\.1):3000$/i.test(currentOrigin)) {
             return currentOrigin;
         }
-        // Live Server / other local ports — use local Node API (npm run dev), not Render
+        // Live Server on :5500 etc. — talk to local Node, not Render
         return 'http://localhost:3000';
     }
 
@@ -73,7 +73,7 @@ function getApiBaseUrl() {
         return currentOrigin;
     }
 
-    // kns.edu.sl — static site; API on Render (PostgreSQL backend)
+    // kns.edu.sl is static hosting; API lives on Render
     if (currentOrigin.includes('kns.edu.sl')) {
         return KNS_DEFAULT_RENDER_API;
     }
@@ -101,7 +101,7 @@ if (typeof window !== 'undefined') {
             }
         }
     } catch (e) {
-        /* ignore */
+        // localStorage blocked — carry on with defaults
     }
 }
 

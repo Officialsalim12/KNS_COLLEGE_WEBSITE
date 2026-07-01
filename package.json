@@ -12,7 +12,6 @@
     "prepare-deploy": "powershell -ExecutionPolicy Bypass -File scripts/prepare-deploy.ps1",
     "db:migrate": "node database/migrate.js",
     "db:seed": "node database/seed.js",
-    "db:purge": "node database/purge.js",
     "db:setup": "node database/migrate.js && node database/seed.js"
   },
   "keywords": [

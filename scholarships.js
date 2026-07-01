@@ -1,4 +1,4 @@
-// wait for CONFIG
+// config.js can load after this file
 function waitForConfig(callback, maxAttempts = 10) {
     let attempts = 0;
     const checkConfig = () => {
@@ -121,7 +121,7 @@ async function loadScholarships(scholarshipsGrid) {
             name: error.name
         });
         
-        // user-facing error copy
+        // what the user actually sees
         let errorMessage = 'Unable to load scholarships. Please try again later.';
         let errorDetails = error.message;
         
@@ -152,7 +152,7 @@ function removePercentagesFromText(text) {
     
     let cleaned = text;
     
-    // strip % wording from award text
+    // strip % figures from award copy — client request
     cleaned = cleaned
         .replace(/Fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
         .replace(/fully funded and \d+% discount on tuition fees/gi, 'Fully funded and partial funding on tuition fees')
@@ -174,7 +174,7 @@ function createScholarshipCard(scholarship) {
     const card = document.createElement('div');
     card.className = 'scholarship-card';
     
-    // fixed deadline — override API
+    // hardcoded deadline for now (overrides API date)
     const deadlineDate = new Date('2026-01-22T23:59:59');
     const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
         year: 'numeric',

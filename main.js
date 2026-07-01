@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // keep in sync with styles.css mobile breakpoint
+    // must match the mobile breakpoint in styles.css
     const NAV_OVERLAY_MAX_WIDTH = 768;
 
     const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');

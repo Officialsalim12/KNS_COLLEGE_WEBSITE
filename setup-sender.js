@@ -1,4 +1,4 @@
-// sendgrid sender verification — run: node setup-sender.js
+// run: node setup-sender.js
 
 const fs = require('fs');
 const path = require('path');

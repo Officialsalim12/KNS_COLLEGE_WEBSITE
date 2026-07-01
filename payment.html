@@ -538,7 +538,7 @@
             try {
                 decodedCourseName = decodeURIComponent(courseName);
             } catch (e) {
-                /* use raw courseName */
+                // decode failed — show the raw string
             }
             courseSummaryEl.textContent = '';
             function addSummaryLine(emoji, label, value, isLast) {
@@ -625,14 +625,14 @@
                                 paymentResult.statusUpdateToken
                             );
                         } catch (storageErr) {
-                            /* sessionStorage unavailable */
+                            // private browsing — no sessionStorage
                         }
                     }
                 } else {
                     await paymentResponse.json().catch(() => ({}));
                 }
             } catch (error) {
-                /* save failed — still open monime */
+                // DB save failed but checkout can still go ahead
             }
 
             const monimeEndpoint = (typeof CONFIG !== 'undefined' && CONFIG.MONIME_ENDPOINT) 

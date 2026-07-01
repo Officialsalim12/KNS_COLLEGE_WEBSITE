@@ -1,5 +1,6 @@
--- Remove all application data (forms, payments, ratings, scholarships, catalog).
--- Schema and tables are kept. Run: npm run db:purge
+-- Application data purge.
+-- Truncates form submissions, payments, ratings, scholarships, and course catalog tables.
+-- Schema and table structures are preserved.
 
 TRUNCATE TABLE
     online_course_ratings,

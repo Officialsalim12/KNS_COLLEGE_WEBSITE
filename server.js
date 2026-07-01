@@ -1,4 +1,4 @@
-// main API server — express, postgresql, sendgrid, monime checkout
+// KNS College API server
 
 const fs = require('fs');
 const path = require('path');
@@ -112,7 +112,7 @@ function buildMonimeCheckoutAllowedOrigins() {
         try {
             set.add(new URL(item).origin);
         } catch (e) {
-            /* skip bad origins */
+            // bad entry in the origins list
         }
     });
     return set;
@@ -240,7 +240,7 @@ function isOriginAllowed(origin) {
             return true;
         }
     } catch {
-        /* ignore */
+        // origin string didn't parse
     }
     return false;
 }
@@ -714,7 +714,7 @@ function resolveReturnOrigin(req) {
             const origin = /^https?:\/\//i.test(raw.trim()) ? new URL(raw.trim()).origin : null;
             if (origin && isAllowedMonimeReturnUrl(origin + '/')) return origin;
         } catch (ignore) {
-            /* next candidate */
+            // try next field
         }
     }
     return null;
@@ -744,7 +744,7 @@ async function lookupOnlineCourseAmountSleMinor(courseNameTrimmed) {
             if (Number.isInteger(n) && n >= 1 && n <= 100000000) return n;
         }
     } catch (ignore) {
-        /* online_courses not migrated yet */
+        // online_courses table probably not created yet
     }
     return null;
 }
@@ -836,7 +836,7 @@ app.post('/api/monime/checkout-session', formRateLimiter, async (req, res) => {
                 const o = new URL(String(returnOriginBody).trim());
                 if (isAllowedMonimeReturnUrl(o.origin + '/')) returnOrigin = o.origin;
             } catch (ignore) {
-                /* bad returnOrigin */
+                // returnOrigin was junk
             }
         }
         if (!returnOrigin) returnOrigin = resolveReturnOrigin(req);
@@ -1132,7 +1132,7 @@ app.post('/api/contacts', formRateLimiter, async (req, res) => {
     const ipAddress = getClientIp(req);
     const userAgent = getUserAgent(req);
     
-    // contact form — save to DB
+    // save contact row first
     let data;
     try {
         data = await db.insertContact({
@@ -1153,7 +1153,7 @@ app.post('/api/contacts', formRateLimiter, async (req, res) => {
         });
     }
 
-    // contact form — sendgrid notification (fire and forget)
+    // email admissions; don't block the JSON response
     if (!sendgridApiKey || !sendgridFromEmail || !sendgridToEmail) {
         console.warn(
             'Contact saved, but SendGrid is not fully configured. Skipping email send.'
@@ -1281,7 +1281,7 @@ app.post('/api/enquiries', formRateLimiter, async (req, res) => {
         return res.status(500).json({ error: 'Failed to save enquiry submission' });
     }
 
-    // enquiry form — sendgrid notification (fire and forget)
+    // email enquiry team in the background
     if (!sendgridApiKey || !sendgridFromEmail || !sendgridToEmail) {
         console.warn(
             'Enquiry saved, but SendGrid is not fully configured. Skipping email send.'
@@ -1663,7 +1663,7 @@ app.get('/api/scholarships/:id', async (req, res) => {
 app.get('/api/scholarships/:id/download/:type', async (req, res) => {
     const { id, type } = req.params;
     
-    // guide or form only
+    // only guide or form downloads
     if (type !== 'guide' && type !== 'form') {
         return res.status(400).json({ error: 'Invalid download type. Use "guide" or "form".' });
     }
@@ -1687,7 +1687,7 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
         
         const trimmedPath = filePath.trim();
         
-        // external file URL — proxy so the browser doesn't hit CORS
+        // hosted file — pull it server-side so the browser skips CORS
         if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
             if (!isAllowedScholarshipFileUrl(trimmedPath)) {
                 return res.status(400).json({ error: 'External file URL is not allowed' });
@@ -1707,7 +1707,7 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
                         });
                     }
                     
-                    // content-type from response or extension
+                    // content-type from upstream or .pdf extension
                     const contentType = fileResponse.headers['content-type'] || 
                                       (trimmedPath.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
                     
@@ -1721,13 +1721,13 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
                     res.status(500).json({ error: 'Failed to fetch file from external source', details: err.message });
                 });
             } catch (proxyError) {
-                // proxy failed — redirect instead
+                // proxy died — just redirect them
                 return res.redirect(trimmedPath);
             }
             return;
         }
         
-        // local file — scholarships folder
+        // file under /scholarships on disk
         const path = require('path');
         const fs = require('fs');
         
@@ -1743,7 +1743,7 @@ app.get('/api/scholarships/:id/download/:type', async (req, res) => {
             });
         }
         
-        // pick MIME from extension
+        // work out MIME from extension
         const ext = path.extname(fullPath).toLowerCase();
         let contentType = 'application/octet-stream';
         if (ext === '.pdf') {
@@ -1800,7 +1800,7 @@ app.get('/api/scholarships/:id/files/check', requireAdminApiKey, async (req, res
             scholarships_dir_exists: fs.existsSync(path.join(__dirname, 'scholarships'))
         };
         
-        // guide file on disk
+        // guide on disk
         if (data.guide_path && data.guide_path.trim() && !data.guide_path.startsWith('http')) {
             const fullPath = resolveScholarshipFilePath(__dirname, data.guide_path);
             results.guide_full_path = IS_PRODUCTION ? undefined : fullPath;
@@ -1809,7 +1809,7 @@ app.get('/api/scholarships/:id/files/check', requireAdminApiKey, async (req, res
             results.guide_exists = isAllowedScholarshipFileUrl(data.guide_path) ? 'external_url' : 'blocked_url';
         }
         
-        // form file on disk
+        // application form on disk
         if (data.form_path && data.form_path.trim() && !data.form_path.startsWith('http')) {
             const fullPath = resolveScholarshipFilePath(__dirname, data.form_path);
             results.form_full_path = IS_PRODUCTION ? undefined : fullPath;
@@ -1827,7 +1827,7 @@ app.get('/api/scholarships/:id/files/check', requireAdminApiKey, async (req, res
 
 app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
     try {
-        // scholarship application — parse body
+        // pull fields off the request body
         const {
             scholarship_id,
             surname,
@@ -1853,7 +1853,7 @@ app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
             declaration
         } = req.body;
         
-        // required fields + national_id
+        // basics + national ID must be there
         if (!surname || !first_name || !gender || !date_of_birth || !nationality || 
             !national_id || national_id.trim() === '' ||
             !address || !city || !phone || !email || !highest_qualification || !school_institution ||
@@ -1864,7 +1864,7 @@ app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
             });
         }
         
-        // personal statement — min 300 words
+        // personal statement needs 300+ words
         const statementWords = personal_statement.trim().split(/\s+/).filter(word => word.length > 0);
         if (statementWords.length < 300) {
             return res.status(400).json({ 
@@ -1875,7 +1875,7 @@ app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
         const ipAddress = getClientIp(req);
         const userAgent = getUserAgent(req);
         
-        // save application
+        // persist the application
         let data;
         try {
             data = await db.insertScholarshipApplication({
@@ -1915,7 +1915,7 @@ app.post('/api/scholarship-applications', formRateLimiter, async (req, res) => {
             });
         }
 
-        // sendgrid notification (fire and forget)
+        // notify scholarships inbox — don't hold the client
         if (sendgridApiKey && sendgridFromEmail && sendgridToEmail) {
             const subjectLine = `New Scholarship Application: ${programme} - ${first_name} ${surname}`;
             
@@ -2058,7 +2058,7 @@ Submitted At: ${new Date().toISOString()}
                         }
                     }
                     
-                    // sendgrid 403 — sender not verified
+                    // 403 = sender email not verified in SendGrid
                     if (emailError.code === 403 || emailError.response?.statusCode === 403) {
                         console.error('\n  🔧 Troubleshooting 403 Forbidden Error:');
                         console.error('   1. Verify the sender email is verified in SendGrid:');
@@ -2075,7 +2075,7 @@ Submitted At: ${new Date().toISOString()}
                         console.error(`  Full Error:`, emailError.message || emailError);
                     }
                     
-                    // deferred delivery — recipient mail server issue
+                    // accepted (202) but their mail server may still defer
                     console.error('\n  IMPORTANT: If SendGrid accepts emails (202 status) but they show "Deferred" in Activity:');
                     console.error('    This indicates the recipient mail server cannot be reached.');
                     console.error('    Common causes:');
